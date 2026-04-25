@@ -19,6 +19,7 @@ export interface ParsedMail {
   from: string;
   subject: string;
   body: string;
+  isHtml: boolean;
   time: string;
   date: string;
 }
@@ -34,34 +35,125 @@ export interface CreateEmailResponse {
   created_at: string;
 }
 
-function parseEmailData(raw: string): { subject: string; body: string } {
-  const lines = raw.split("\n");
+
+function decodeQuotedPrintable(str: string): string {
+  try {
+    return str
+      .replace(/=([0-9A-Fa-f]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+      .replace(/=\r?\n/g, '');
+  } catch (e) {
+    return str;
+  }
+}
+
+function parseEmailData(raw: string): { subject: string; body: string; isHtml: boolean } {
+  const lines = raw.replace(/\r\n/g, "\n").split("\n");
   let subject = "";
   let bodyStartIndex = 0;
   let inHeaders = true;
-
+  let boundary = "";
+  let isMultipart = false;
+  
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-
     if (inHeaders) {
       if (line.toLowerCase().startsWith("subject:")) {
         subject = line.substring(8).trim();
       }
-      if (line === "") {
+      if (line.toLowerCase().startsWith("content-type:") && line.includes("multipart/")) {
+        isMultipart = true;
+        const match = line.match(/boundary=["']?([^"';\s]+)["']?/i);
+        if (match) boundary = match[1];
+      }
+      if (line.trim() === "") {
         inHeaders = false;
         bodyStartIndex = i + 1;
+        break;
       }
     }
   }
 
-  const body = lines.slice(bodyStartIndex).join("\n").trim();
+  // Fallback for boundary spread across lines
+  if (isMultipart && !boundary) {
+    for (let i = 0; i < bodyStartIndex; i++) {
+      const match = lines[i].match(/boundary=["']?([^"';\s]+)["']?/i);
+      if (match) {
+        boundary = match[1];
+        break;
+      }
+    }
+  }
 
-  return { subject: subject || "No Subject", body };
+  let body = lines.slice(bodyStartIndex).join("\n").trim();
+  let isHtml = false;
+
+  if (isMultipart && boundary) {
+    const parts = body.split("--" + boundary);
+    let htmlPart = "";
+    let textPart = "";
+    
+    for (const part of parts) {
+      if (!part || part.trim() === "" || part.trim() === "--") continue;
+      
+      const partLines = part.trimStart().split("\n");
+      let partInHeaders = true;
+      let partContentType = "text/plain";
+      let isQuotedPrintable = false;
+      let partBodyStart = 0;
+      
+      for (let j = 0; j < partLines.length; j++) {
+        const pl = partLines[j];
+        if (partInHeaders) {
+          if (pl.toLowerCase().startsWith("content-type:")) {
+            if (pl.includes("text/html")) partContentType = "text/html";
+            else if (pl.includes("text/plain")) partContentType = "text/plain";
+          }
+          if (pl.toLowerCase().startsWith("content-transfer-encoding:") && pl.toLowerCase().includes("quoted-printable")) {
+            isQuotedPrintable = true;
+          }
+          if (pl.trim() === "") {
+            partInHeaders = false;
+            partBodyStart = j + 1;
+            break;
+          }
+        }
+      }
+      
+      let partContent = partLines.slice(partBodyStart).join("\n").trim();
+      if (isQuotedPrintable) {
+        partContent = decodeQuotedPrintable(partContent);
+      }
+      
+      if (partContentType === "text/html" && !htmlPart) {
+        htmlPart = partContent;
+      } else if (partContentType === "text/plain" && !textPart) {
+        textPart = partContent;
+      }
+    }
+    
+    if (htmlPart) {
+      body = htmlPart;
+      isHtml = true;
+    } else if (textPart) {
+      body = textPart;
+    }
+  } else {
+    // Check if whole email is html
+    for (let i = 0; i < bodyStartIndex; i++) {
+      if (lines[i].toLowerCase().startsWith("content-type:") && lines[i].includes("text/html")) {
+        isHtml = true;
+        break;
+      }
+    }
+  }
+
+  return { subject: subject || "No Subject", body, isHtml };
 }
+
 
 function formatRelativeTime(dateStr: string): string {
   try {
-    const date = new Date(dateStr.replace(" ", "T"));
+    const date = new Date(dateStr.replace(" ", "T") + (dateStr.includes("Z") ? "" : "Z"));
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffSec = Math.floor(diffMs / 1000);
@@ -89,12 +181,13 @@ export async function fetchEmails(address: string): Promise<ParsedMail[]> {
   }
 
   return json.data.map((mail) => {
-    const { subject, body } = parseEmailData(mail.data);
+    const { subject, body, isHtml } = parseEmailData(mail.data);
     return {
       id: mail.id,
       from: mail.sender,
       subject,
       body,
+      isHtml,
       time: formatRelativeTime(mail.date),
       date: mail.date,
     };
@@ -112,12 +205,13 @@ export async function fetchEmail(address: string, id: number): Promise<ParsedMai
     return null;
   }
 
-  const { subject, body } = parseEmailData(json.data.data);
+  const { subject, body, isHtml } = parseEmailData(json.data.data);
   return {
     id: json.data.id,
     from: json.data.sender,
     subject,
     body,
+    isHtml,
     time: formatRelativeTime(json.data.date),
     date: json.data.date,
   };

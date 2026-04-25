@@ -23,6 +23,57 @@ interface Mail extends ParsedMail {
 
 const POLL_INTERVAL = 5000;
 
+const playNotificationSound = () => {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc.frequency.exponentialRampToValueAtTime(1174.66, ctx.currentTime + 0.1); // D6
+
+    gainNode.gain.setValueAtTime(0, ctx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.05);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+
+    osc.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.5);
+  } catch (e) {
+    console.error("Audio play failed", e);
+  }
+};
+
+
+const getIframeDoc = (html: string, currentTheme: string) => {
+  const isDark = currentTheme === "dark";
+  const fg = isDark ? "#e8e4da" : "#1a1a1a";
+  const linkColor = isDark ? "#8cb4ff" : "#0056b3";
+  
+  // Inject base styles to match the TempMail theme, but use !important to override inline styles where needed.
+  const style = `
+    <style>
+      body {
+        background-color: transparent !important;
+        color: ${fg} !important;
+        font-family: 'Courier Prime', monospace, sans-serif !important;
+        margin: 0;
+        padding: 0;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      a { color: ${linkColor} !important; }
+      * { color: ${fg} !important; background-color: transparent !important; }
+    </style>
+  `;
+  return style + html;
+};
+
 export default function Home() {
   const [currentAddr, setCurrentAddr] = useState("");
   const [mails, setMails] = useState<Mail[]>([]);
@@ -32,8 +83,25 @@ export default function Home() {
   const [isApiUp, setIsApiUp] = useState(true);
   const [hasEnteredUsername, setHasEnteredUsername] = useState(false);
   const [inputUsername, setInputUsername] = useState("");
+  const [isInitializing, setIsInitializing] = useState(true);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const seenEmailIds = useRef<Set<number>>(new Set());
+
+  const clearLocalSession = useCallback(() => {
+    setCurrentAddr("");
+    localStorage.removeItem("xelio_addr");
+    setMails([]);
+    seenEmailIds.current.clear();
+    setActiveMailId(null);
+    setHasEnteredUsername(false);
+    setInputUsername("");
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  }, []);
 
   const addToast = useCallback(
     (message: string, type: "error" | "success" = "error") => {
@@ -46,31 +114,72 @@ export default function Home() {
     [],
   );
 
+  
   useEffect(() => {
     const savedAddr = localStorage.getItem("xelio_addr");
     if (savedAddr) {
       setCurrentAddr(savedAddr);
       setHasEnteredUsername(true);
     }
+    const savedTheme = localStorage.getItem("xelio_theme") as "dark" | "light" | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      document.documentElement.setAttribute("data-theme", savedTheme);
+    }
+    setIsInitializing(false);
+  }, []);
+
+
+  
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => {
+      const newTheme = prev === "dark" ? "light" : "dark";
+      localStorage.setItem("xelio_theme", newTheme);
+      document.documentElement.setAttribute("data-theme", newTheme);
+      return newTheme;
+    });
   }, []);
 
   const loadEmails = useCallback(async () => {
     if (!currentAddr) return;
     try {
       const emails = await fetchEmails(currentAddr);
+      
+      const isInitialLoad = seenEmailIds.current.size === 0;
+      let hasNew = false;
+
+      emails.forEach((e) => {
+        if (!seenEmailIds.current.has(e.id)) {
+          if (!isInitialLoad) hasNew = true;
+          seenEmailIds.current.add(e.id);
+        }
+      });
+
+      if (hasNew) {
+        playNotificationSound();
+      }
+
       setMails((prev) => {
-        const prevIds = new Set(prev.map((m) => m.id));
-        const newEmails = emails.map((e) => ({
-          ...e,
-          unread: !prevIds.has(e.id),
-        }));
-        return newEmails;
+        const prevMap = new Map(prev.map((m) => [m.id, m]));
+        return emails.map((e) => {
+          const existing = prevMap.get(e.id);
+          return {
+            ...e,
+            unread: existing ? existing.unread : true,
+          };
+        });
       });
       setIsApiUp(true);
-    } catch {
-      setIsApiUp(false);
+    } catch (err: any) {
+      const msg = err?.message?.toLowerCase() || "";
+      if (msg.includes("not found") || msg.includes("invalid") || msg.includes("expire")) {
+        clearLocalSession();
+        addToast("Session expired", "error");
+      } else {
+        setIsApiUp(false);
+      }
     }
-  }, [currentAddr]);
+  }, [currentAddr, clearLocalSession, addToast]);
 
   const createAddr = useCallback(
     async (username: string) => {
@@ -85,20 +194,11 @@ export default function Home() {
         setHasEnteredUsername(true);
         setStatus("ready");
         setMails([]);
+    seenEmailIds.current.clear();
       } catch (err: any) {
-        const errorMsg = err?.message || "";
-        if (errorMsg.includes("already exists")) {
-          addToast("Username is already taken", "error");
-        } else if (errorMsg.includes("3-32 characters")) {
-          addToast("Username must be 3-32 characters", "error");
-        } else if (errorMsg.includes("alphanumeric")) {
-          addToast(
-            "Only letters, numbers, hyphens, and underscores allowed",
-            "error",
-          );
-        } else {
-          addToast("Failed to create address", "error");
-        }
+        const errorMsg = err?.message || "Failed to create address";
+        // Show the exact error message from the API
+        addToast(errorMsg, "error");
       } finally {
         setIsGenerating(false);
       }
@@ -128,21 +228,12 @@ export default function Home() {
     if (!currentAddr) return;
     try {
       await deleteEmailAddress(currentAddr);
-      setCurrentAddr("");
-      localStorage.removeItem("xelio_addr");
-      setMails([]);
-      setActiveMailId(null);
-      setHasEnteredUsername(false);
-      setInputUsername("");
+      clearLocalSession();
       setStatus("address deleted");
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
-      }
     } catch {
       setStatus("failed to delete address");
     }
-  }, [currentAddr]);
+  }, [currentAddr, clearLocalSession]);
 
   const copyAddr = useCallback(() => {
     if (currentAddr) {
@@ -198,14 +289,26 @@ export default function Home() {
   useEffect(() => {
     if (!currentAddr || isGenerating) return;
 
+    let isVisible = !document.hidden;
+    const handleVisibilityChange = () => {
+      isVisible = !document.hidden;
+      if (isVisible) {
+        loadEmails();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     loadEmails();
     setStatus("checking for messages");
 
     pollIntervalRef.current = setInterval(() => {
-      loadEmails();
-    }, POLL_INTERVAL);
+      if (isVisible) {
+        loadEmails();
+      }
+    }, 10000); // Reduced polling frequency to every 10 seconds
 
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
       }
@@ -213,13 +316,25 @@ export default function Home() {
   }, [currentAddr, isGenerating, loadEmails]);
 
   useEffect(() => {
+    let isVisible = !document.hidden;
+    
     const checkApi = async () => {
+      if (!isVisible) return;
       const up = await checkHealth();
       setIsApiUp(up);
     };
+
+    const handleVisibilityChange = () => {
+      isVisible = !document.hidden;
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     checkApi();
-    const interval = setInterval(checkApi, 30000);
-    return () => clearInterval(interval);
+    const interval = setInterval(checkApi, 60000); // Check API health only every 60s
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      clearInterval(interval);
+    };
   }, []);
 
   const unreadCount = mails.filter((m) => m.unread).length;
@@ -247,42 +362,47 @@ export default function Home() {
     </div>
   );
 
+    if (isInitializing) {
+    return (
+      <div className="app">
+        <div className="stipple-bg" />
+        <div className="dither-overlay" />
+        <div className="grain" />
+      </div>
+    );
+  }
+
   // Landing Screen
   if (!hasEnteredUsername) {
     return (
       <div className="app">
         {renderToasts()}
         <div className="stipple-bg" />
+        <div className="dither-overlay" />
         <div className="grain" />
 
         <div className="header">
           <div className="logo">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 32 32"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect
-                x="3"
-                y="7"
-                width="26"
-                height="18"
-                rx="2"
-                stroke="currentColor"
-                strokeWidth="2"
-                fill="none"
-              />
-              <path
-                d="M3 9l13 10 13-10"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="26" height="18" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/><path d="M3 9l13 10 13-10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             XELIO
+          </div>
+          <div className="header-actions">
+            <button className="icon-link" onClick={toggleTheme} title="Toggle Theme">
+              {theme === "dark" ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+              )}
+            </button>
+            <button className="icon-link" onClick={() => addToast("Privacy Policy coming soon", "success")} title="Privacy Policy">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </button>
+            <button className="icon-link" onClick={() => addToast("TempMail built by krey-yon", "success")} title="About">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            </button>
+            <a href="https://github.com/krey-yon/TempMail_fe" target="_blank" rel="noopener noreferrer" className="icon-link" title="GitHub">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+            </a>
           </div>
         </div>
 
@@ -290,7 +410,7 @@ export default function Home() {
           <div className="landing-content">
             <h1 className="landing-title">Temporary email</h1>
             <p className="landing-subtitle">
-              Receive emails instantly. No registration required.
+              Instant. Private. Ephemeral.
             </p>
 
             <form onSubmit={handleUsernameSubmit} className="landing-form">
@@ -301,7 +421,7 @@ export default function Home() {
                   onChange={(e) => {
                     setInputUsername(e.target.value);
                   }}
-                  placeholder="enter username"
+                  placeholder="username"
                   className="username-input"
                   disabled={isGenerating}
                   autoFocus
@@ -320,15 +440,23 @@ export default function Home() {
                     <span className="ldot" />
                   </span>
                 ) : (
-                  "Get Started"
+                  "Create Address"
                 )}
               </button>
             </form>
 
             <div className="landing-hint">
               <span>
-                3-32 characters · letters, numbers, hyphens, underscores
+                3-32 characters · a-z, 0-9, -, _
               </span>
+            </div>
+            
+            <div className="author-credit">
+              <div><a href="https://github.com/krey-yon" target="_blank" rel="noopener noreferrer">krey-yon</a></div>
+              <div className="os-badge">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                OPEN SOURCE
+              </div>
             </div>
           </div>
         </div>
@@ -349,6 +477,7 @@ export default function Home() {
     <div className="app">
       {renderToasts()}
       <div className="stipple-bg" />
+      <div className="dither-overlay" />
       <div className="grain" />
 
       <div className="header">
@@ -382,9 +511,27 @@ export default function Home() {
         </div>
         <div className="header-right">
           <span>{mails.length} messages</span>
-          <span style={{ color: "rgba(232,228,218,0.2)" }}>|</span>
+          <span className="separator">|</span>
           <span>{currentAddr ? currentAddr.split("@")[1] : "xelio.me"}</span>
         </div>
+          <div className="header-actions">
+            <button className="icon-link" onClick={toggleTheme} title="Toggle Theme">
+              {theme === "dark" ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+              )}
+            </button>
+            <button className="icon-link" onClick={() => addToast("Privacy Policy coming soon", "success")} title="Privacy Policy">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </button>
+            <button className="icon-link" onClick={() => addToast("TempMail built by krey-yon", "success")} title="About">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            </button>
+            <a href="https://github.com/krey-yon/TempMail_fe" target="_blank" rel="noopener noreferrer" className="icon-link" title="GitHub">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+            </a>
+          </div>
       </div>
 
       <div className="main">
@@ -401,30 +548,33 @@ export default function Home() {
                 <span className="generating">waiting...</span>
               )}
             </div>
-            <div className="addr-actions">
+            <div className="addr-actions" style={{ display: 'flex', gap: '8px' }}>
               <button
-                className="btn-ghost"
+                className="icon-link"
                 onClick={copyAddr}
                 disabled={!currentAddr}
+                title="Copy Address"
               >
-                copy
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
               </button>
               <button
-                className="btn-ghost"
+                className="icon-link"
                 onClick={() => {
                   loadEmails();
                   addToast("Refreshed inbox", "success");
                 }}
                 disabled={!currentAddr || isGenerating}
+                title="Refresh Inbox"
               >
-                refresh
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
               </button>
               <button
-                className="btn-ghost"
+                className="icon-link"
                 onClick={removeAddr}
                 disabled={!currentAddr}
+                title="Delete Address"
               >
-                delete
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
               </button>
             </div>
           </div>
@@ -491,12 +641,20 @@ export default function Home() {
                 </div>
               </div>
               <div className="mv-body">
-                {activeMail.body.split("\n").map((line, i) => (
-                  <span key={i}>
-                    {line}
-                    <br />
-                  </span>
-                ))}
+                {activeMail.isHtml ? (
+                  <iframe 
+                    srcDoc={getIframeDoc(activeMail.body, theme)} 
+                    style={{ width: '100%', height: '100%', border: 'none', minHeight: '400px', background: 'transparent', borderRadius: '4px' }} 
+                    sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
+                  />
+                ) : (
+                  activeMail.body.split("\n").map((line, i) => (
+                    <span key={i}>
+                      {line}
+                      <br />
+                    </span>
+                  ))
+                )}
               </div>
             </div>
           ) : (
