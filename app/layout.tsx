@@ -30,7 +30,6 @@ export const metadata: Metadata = {
   authors: [{ name: "krey-yon", url: "https://github.com/krey-yon" }],
   creator: "krey-yon",
   publisher: "krey-yon",
-  metadataBase: new URL("https://xelio.me"),
   alternates: {
     canonical: "/",
     languages: {
@@ -77,7 +76,7 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
-    indexIfEmbedded: true,
+    indexifembedded: true,
     googleBot: {
       index: true,
       follow: true,
