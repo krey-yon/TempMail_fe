@@ -1,0 +1,677 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=IM+Fell+English+SC&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .app {
+    background: #000;
+    min-height: 520px;
+    height: 520px;
+    width: 100%;
+    font-family: 'Courier Prime', monospace;
+    color: #e8e4da;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .grain {
+    position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+    opacity: 0.55;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .stipple-bg {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(circle, rgba(232,228,218,0.045) 1px, transparent 1px);
+    background-size: 18px 18px;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px 10px;
+    border-bottom: 1px solid rgba(232,228,218,0.12);
+    position: relative;
+    z-index: 5;
+  }
+
+  .logo {
+    font-family: 'IM Fell English SC', serif;
+    font-size: 17px;
+    letter-spacing: 0.12em;
+    color: #e8e4da;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid #e8e4da;
+    position: relative;
+  }
+
+  .logo-dot::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: 50%;
+    background: #e8e4da;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: rgba(232,228,218,0.45);
+    text-transform: uppercase;
+  }
+
+  .main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    position: relative;
+    z-index: 5;
+    overflow: hidden;
+  }
+
+  .sidebar {
+    border-right: 1px solid rgba(232,228,218,0.12);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .addr-box {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(232,228,218,0.12);
+  }
+
+  .addr-label {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(232,228,218,0.38);
+    margin-bottom: 7px;
+  }
+
+  .addr-value {
+    font-size: 11px;
+    color: #e8e4da;
+    word-break: break-all;
+    line-height: 1.5;
+  }
+
+  .addr-value span {
+    color: rgba(232,228,218,0.55);
+  }
+
+  .addr-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .btn-ghost {
+    flex: 1;
+    padding: 5px 0;
+    background: transparent;
+    border: 1px solid rgba(232,228,218,0.22);
+    color: rgba(232,228,218,0.7);
+    font-family: 'Courier Prime', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-ghost:hover {
+    background: rgba(232,228,218,0.07);
+    border-color: rgba(232,228,218,0.5);
+    color: #e8e4da;
+  }
+
+  .btn-solid {
+    flex: 1;
+    padding: 5px 0;
+    background: rgba(232,228,218,0.9);
+    border: 1px solid transparent;
+    color: #000;
+    font-family: 'Courier Prime', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-solid:hover { background: #e8e4da; }
+
+  .timer-box {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(232,228,218,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .timer-label {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(232,228,218,0.38);
+  }
+
+  .timer-val {
+    font-size: 13px;
+    font-family: 'Courier Prime', monospace;
+    color: #e8e4da;
+    letter-spacing: 0.05em;
+  }
+
+  .timer-dots {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+  }
+
+  .tdot {
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: rgba(232,228,218,0.4);
+  }
+
+  .tdot.active { background: #e8e4da; }
+
+  .inbox-header {
+    padding: 10px 16px 8px;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(232,228,218,0.38);
+    border-bottom: 1px solid rgba(232,228,218,0.08);
+  }
+
+  .inbox-list {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .inbox-list::-webkit-scrollbar { width: 3px; }
+  .inbox-list::-webkit-scrollbar-track { background: transparent; }
+  .inbox-list::-webkit-scrollbar-thumb { background: rgba(232,228,218,0.15); }
+
+  .mail-item {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(232,228,218,0.07);
+    cursor: pointer;
+    transition: background 0.1s;
+    position: relative;
+  }
+
+  .mail-item:hover { background: rgba(232,228,218,0.04); }
+  .mail-item.active { background: rgba(232,228,218,0.07); }
+
+  .mail-item.unread::before {
+    content: '';
+    position: absolute;
+    left: 7px; top: 50%;
+    transform: translateY(-50%);
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: #e8e4da;
+  }
+
+  .mail-from {
+    font-size: 10px;
+    font-weight: 700;
+    color: #e8e4da;
+    margin-bottom: 2px;
+    letter-spacing: 0.03em;
+  }
+
+  .mail-subject-small {
+    font-size: 9px;
+    color: rgba(232,228,218,0.45);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mail-time {
+    position: absolute;
+    right: 14px; top: 10px;
+    font-size: 8px;
+    color: rgba(232,228,218,0.3);
+    letter-spacing: 0.05em;
+  }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 20px;
+  }
+
+  .empty-dots {
+    display: grid;
+    grid-template-columns: repeat(5,1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+
+  .edot {
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: rgba(232,228,218,0.15);
+  }
+
+  .edot.lit { background: rgba(232,228,218,0.5); }
+
+  .empty-text {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(232,228,218,0.25);
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .content-bar {
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(232,228,218,0.12);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .content-bar-label {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(232,228,218,0.38);
+  }
+
+  .badge {
+    background: rgba(232,228,218,0.1);
+    border: 1px solid rgba(232,228,218,0.2);
+    color: rgba(232,228,218,0.6);
+    font-size: 8px;
+    padding: 1px 6px;
+    letter-spacing: 0.1em;
+  }
+
+  .mail-view {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+  }
+
+  .mail-view::-webkit-scrollbar { width: 3px; }
+  .mail-view::-webkit-scrollbar-thumb { background: rgba(232,228,218,0.1); }
+
+  .mv-from {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(232,228,218,0.4);
+    margin-bottom: 4px;
+  }
+
+  .mv-subject {
+    font-family: 'IM Fell English SC', serif;
+    font-size: 16px;
+    color: #e8e4da;
+    margin-bottom: 14px;
+    line-height: 1.3;
+  }
+
+  .mv-meta {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(232,228,218,0.1);
+  }
+
+  .mv-meta-item {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: rgba(232,228,218,0.35);
+    text-transform: uppercase;
+  }
+
+  .mv-meta-item span {
+    color: rgba(232,228,218,0.65);
+  }
+
+  .mv-body {
+    font-size: 12px;
+    line-height: 1.8;
+    color: rgba(232,228,218,0.7);
+  }
+
+  .mv-link {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 8px 16px;
+    border: 1px solid rgba(232,228,218,0.3);
+    color: #e8e4da;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .mv-link:hover {
+    background: rgba(232,228,218,0.08);
+  }
+
+  .no-mail {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .no-mail-art {
+    width: 60px;
+    height: 60px;
+    position: relative;
+    margin-bottom: 10px;
+  }
+
+  .status-bar {
+    padding: 6px 20px;
+    border-top: 1px solid rgba(232,228,218,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 5;
+  }
+
+  .status-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 8px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(232,228,218,0.3);
+  }
+
+  .status-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: rgba(232,228,218,0.5);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+</style>
+
+<div class="app">
+  <div class="stipple-bg"></div>
+  <div class="grain"></div>
+
+  <div class="header">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      VOIDMAIL
+    </div>
+    <div class="header-right">
+      <span id="msg-count">0 messages</span>
+      <span style="color:rgba(232,228,218,0.2)">|</span>
+      <span>ephemeral</span>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="sidebar">
+      <div class="addr-box">
+        <div class="addr-label">your address</div>
+        <div class="addr-value" id="addr-display">
+          <span>generating</span>
+          <span style="opacity:0.4">...</span>
+        </div>
+        <div class="addr-actions">
+          <button class="btn-ghost" onclick="copyAddr()">copy</button>
+          <button class="btn-solid" onclick="newAddr()">new</button>
+        </div>
+      </div>
+
+      <div class="timer-box">
+        <div>
+          <div class="timer-label">expires in</div>
+          <div class="timer-val" id="timer-display">10:00</div>
+        </div>
+        <div class="timer-dots" id="timer-dots"></div>
+      </div>
+
+      <div class="inbox-header">inbox · <span id="unread-count">0</span> unread</div>
+
+      <div class="inbox-list" id="inbox-list">
+        <div class="empty-state">
+          <div class="empty-dots" id="edots"></div>
+          <div class="empty-text">awaiting signal</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="content-bar">
+        <div class="content-bar-label">message</div>
+        <div class="badge" id="mail-badge">none selected</div>
+      </div>
+      <div id="mail-view-area" class="no-mail">
+        <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="30" cy="30" r="1.5" fill="rgba(232,228,218,0.4)"/>
+          <circle cx="30" cy="22" r="1" fill="rgba(232,228,218,0.2)"/>
+          <circle cx="30" cy="38" r="1" fill="rgba(232,228,218,0.2)"/>
+          <circle cx="22" cy="30" r="1" fill="rgba(232,228,218,0.2)"/>
+          <circle cx="38" cy="30" r="1" fill="rgba(232,228,218,0.2)"/>
+          <circle cx="24" cy="24" r="0.8" fill="rgba(232,228,218,0.1)"/>
+          <circle cx="36" cy="24" r="0.8" fill="rgba(232,228,218,0.1)"/>
+          <circle cx="24" cy="36" r="0.8" fill="rgba(232,228,218,0.1)"/>
+          <circle cx="36" cy="36" r="0.8" fill="rgba(232,228,218,0.1)"/>
+          <circle cx="30" cy="14" r="0.6" fill="rgba(232,228,218,0.08)"/>
+          <circle cx="30" cy="46" r="0.6" fill="rgba(232,228,218,0.08)"/>
+          <circle cx="14" cy="30" r="0.6" fill="rgba(232,228,218,0.08)"/>
+          <circle cx="46" cy="30" r="0.6" fill="rgba(232,228,218,0.08)"/>
+        </svg>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(232,228,218,0.25);">select a message</div>
+        <div style="font-size:9px;color:rgba(232,228,218,0.15);letter-spacing:0.05em;">or wait for incoming</div>
+        <button class="btn-ghost" style="margin-top:12px;width:120px;" onclick="simulateMail()">simulate mail</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-left">
+      <div class="status-dot"></div>
+      <span>live · auto-refresh</span>
+    </div>
+    <div style="font-size:8px;letter-spacing:0.1em;color:rgba(232,228,218,0.2);text-transform:uppercase;">
+      <span id="status-msg">ready</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const adjectives = ['phantom','void','null','dark','echo','dust','ash','noir','mist','iron'];
+const nouns = ['signal','drift','wave','pulse','node','flux','shadow','mark','point','arc'];
+const domains = ['voidmail.io','nullpost.net','darknode.pm','ephemeral.cc'];
+
+let currentAddr = '';
+let seconds = 600;
+let timerInterval;
+let mails = [];
+let activeMailId = null;
+
+const sampleMails = [
+  {id:1, from:'noreply@github.com', subject:'Your verification code', time:'just now', body:'Your GitHub verification code is 847-291.\n\nThis code expires in 10 minutes. Do not share this code with anyone.\n\nIf you did not request this, you can safely ignore this message.', link:'Verify account'},
+  {id:2, from:'confirm@discord.com', subject:'Confirm your email address', time:'1m ago', body:'Please confirm your email address to complete your Discord account setup.\n\nClick the button below to verify your email and unlock all features.', link:'Verify email'},
+  {id:3, from:'no-reply@twitter.com', subject:'Confirm your new X account', time:'3m ago', body:'Almost there. Please confirm your X account by clicking the link below.\n\nThis link will expire in 24 hours.', link:'Confirm account'},
+];
+
+function genAddr() {
+  const adj = adjectives[Math.floor(Math.random()*adjectives.length)];
+  const noun = nouns[Math.floor(Math.random()*nouns.length)];
+  const num = Math.floor(Math.random()*9000)+1000;
+  const domain = domains[Math.floor(Math.random()*domains.length)];
+  return `${adj}.${noun}.${num}@${domain}`;
+}
+
+function renderAddr(addr) {
+  const parts = addr.split('@');
+  document.getElementById('addr-display').innerHTML =
+    `<span>${parts[0]}</span><span style="opacity:0.5">@${parts[1]}</span>`;
+}
+
+function renderTimerDots(s) {
+  const total = 20;
+  const filled = Math.ceil((s / 600) * total);
+  let html = '';
+  for(let i=0;i<total;i++) {
+    html += `<div class="tdot${i<filled?' active':''}"></div>`;
+  }
+  document.getElementById('timer-dots').innerHTML = html;
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  seconds = 600;
+  timerInterval = setInterval(() => {
+    seconds--;
+    if(seconds <= 0) { seconds = 0; clearInterval(timerInterval); setStatus('expired'); }
+    const m = Math.floor(seconds/60);
+    const s = seconds%60;
+    document.getElementById('timer-display').textContent =
+      `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    renderTimerDots(seconds);
+  }, 1000);
+  renderTimerDots(seconds);
+}
+
+function setStatus(msg) {
+  document.getElementById('status-msg').textContent = msg;
+}
+
+function copyAddr() {
+  navigator.clipboard.writeText(currentAddr).catch(()=>{});
+  setStatus('copied to clipboard');
+  setTimeout(()=>setStatus('ready'), 2000);
+}
+
+function newAddr() {
+  currentAddr = genAddr();
+  renderAddr(currentAddr);
+  mails = [];
+  activeMailId = null;
+  renderInbox();
+  showNoMail();
+  startTimer();
+  setStatus('new address generated');
+  setTimeout(()=>setStatus('ready'), 2000);
+}
+
+function renderInbox() {
+  const list = document.getElementById('inbox-list');
+  const unread = mails.filter(m=>m.unread).length;
+  document.getElementById('unread-count').textContent = unread;
+  document.getElementById('msg-count').textContent = `${mails.length} message${mails.length!==1?'s':''}`;
+
+  if(mails.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-dots">${Array(15).fill(0).map((_,i)=>`<div class="edot${i%4===0?' lit':''}"></div>`).join('')}</div>
+      <div class="empty-text">awaiting signal</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = mails.map(m=>`
+    <div class="mail-item${m.unread?' unread':''}${m.id===activeMailId?' active':''}" onclick="openMail(${m.id})">
+      <div class="mail-from">${m.from.split('@')[0]}</div>
+      <div class="mail-subject-small">${m.subject}</div>
+      <div class="mail-time">${m.time}</div>
+    </div>
+  `).join('');
+}
+
+function showNoMail() {
+  document.getElementById('mail-badge').textContent = 'none selected';
+  document.getElementById('mail-view-area').innerHTML = `
+    <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="30" cy="30" r="1.5" fill="rgba(232,228,218,0.4)"/>
+      <circle cx="30" cy="22" r="1" fill="rgba(232,228,218,0.2)"/>
+      <circle cx="30" cy="38" r="1" fill="rgba(232,228,218,0.2)"/>
+      <circle cx="22" cy="30" r="1" fill="rgba(232,228,218,0.2)"/>
+      <circle cx="38" cy="30" r="1" fill="rgba(232,228,218,0.2)"/>
+    </svg>
+    <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(232,228,218,0.25);">select a message</div>
+    <div style="font-size:9px;color:rgba(232,228,218,0.15);letter-spacing:0.05em;">or wait for incoming</div>
+    <button class="btn-ghost" style="margin-top:12px;width:120px;" onclick="simulateMail()">simulate mail</button>
+  `;
+}
+
+function openMail(id) {
+  const mail = mails.find(m=>m.id===id);
+  if(!mail) return;
+  mail.unread = false;
+  activeMailId = id;
+  renderInbox();
+
+  document.getElementById('mail-badge').textContent = mail.from;
+  document.getElementById('mail-view-area').className = 'mail-view';
+  document.getElementById('mail-view-area').innerHTML = `
+    <div class="mv-from">${mail.from}</div>
+    <div class="mv-subject">${mail.subject}</div>
+    <div class="mv-meta">
+      <div class="mv-meta-item">to <span>${currentAddr.split('@')[0]}...</span></div>
+      <div class="mv-meta-item">received <span>${mail.time}</span></div>
+    </div>
+    <div class="mv-body">${mail.body.replace(/\n/g,'<br>')}</div>
+    ${mail.link ? `<div class="mv-link">${mail.link} →</div>` : ''}
+  `;
+}
+
+function simulateMail() {
+  const sample = sampleMails[mails.length % sampleMails.length];
+  const newMail = {...sample, id: Date.now(), unread: true, time: 'just now'};
+  mails.unshift(newMail);
+  renderInbox();
+  setStatus('new message received');
+  setTimeout(()=>setStatus('ready'), 2000);
+}
+
+newAddr();
+</script>
