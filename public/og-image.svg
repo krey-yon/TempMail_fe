@@ -1,0 +1,53 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#000000"/>
+
+  <!-- Stipple background pattern -->
+  <defs>
+    <pattern id="stipple" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="10" cy="10" r="0.8" fill="#e8e4da" fill-opacity="0.08"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#stipple)"/>
+
+  <!-- Dither overlay -->
+  <rect width="1200" height="630" fill="#111111" fill-opacity="0.3"/>
+
+  <!-- Main content container -->
+  <g transform="translate(600, 280)">
+
+    <!-- Logo envelope icon -->
+    <g transform="translate(-40, -120)">
+      <rect x="0" y="0" width="80" height="56" rx="4" stroke="#e8e4da" stroke-width="4" fill="none"/>
+      <path d="M0 8 L40 40 L80 8" stroke="#e8e4da" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </g>
+
+    <!-- Xelio text -->
+    <text x="0" y="20" font-family="'IM Fell English SC', serif" font-size="96" fill="#e8e4da" text-anchor="middle" letter-spacing="8">Xelio</text>
+
+    <!-- Tagline -->
+    <text x="0" y="70" font-family="'Courier Prime', monospace" font-size="24" fill="#e8e4da" fill-opacity="0.6" text-anchor="middle" letter-spacing="4">TEMPORARY EMAIL SERVICE</text>
+
+    <!-- Divider -->
+    <line x1="-200" y1="100" x2="200" y2="100" stroke="#e8e4da" stroke-opacity="0.2" stroke-width="1"/>
+
+    <!-- Features -->
+    <text x="0" y="140" font-family="'Courier Prime', monospace" font-size="16" fill="#e8e4da" fill-opacity="0.5" text-anchor="middle" letter-spacing="2">INSTANT · PRIVATE · EPHEMERAL</text>
+
+  </g>
+
+  <!-- Bottom bar -->
+  <rect x="0" y="580" width="1200" height="50" fill="#111111" fill-opacity="0.5"/>
+  <text x="600" y="610" font-family="'Courier Prime', monospace" font-size="14" fill="#e8e4da" fill-opacity="0.4" text-anchor="middle" letter-spacing="2">xelio.me</text>
+
+  <!-- Corner decorations -->
+  <circle cx="50" cy="50" r="20" fill="#e8e4da" fill-opacity="0.05"/>
+  <circle cx="1150" cy="50" r="20" fill="#e8e4da" fill-opacity="0.05"/>
+  <circle cx="50" cy="580" r="20" fill="#e8e4da" fill-opacity="0.05"/>
+  <circle cx="1150" cy="580" r="20" fill="#e8e4da" fill-opacity="0.05"/>
+
+  <!-- Subtle accent lines -->
+  <line x1="0" y1="0" x2="100" y2="0" stroke="#e8e4da" stroke-opacity="0.1" stroke-width="2"/>
+  <line x1="1100" y1="0" x2="1200" y2="0" stroke="#e8e4da" stroke-opacity="0.1" stroke-width="2"/>
+  <line x1="0" y1="630" x2="100" y2="630" stroke="#e8e4da" stroke-opacity="0.1" stroke-width="2"/>
+  <line x1="1100" y1="630" x2="1200" y2="630" stroke="#e8e4da" stroke-opacity="0.1" stroke-width="2"/>
+</svg>

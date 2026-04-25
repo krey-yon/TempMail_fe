@@ -6,14 +6,14 @@
   --fg: #e8e4da;
   --fg-rgb: 232, 228, 218;
   --bg-rgb: 0, 0, 0;
-  
+
   --fg-dim: rgba(var(--fg-rgb), 0.55);
   --fg-faint: rgba(var(--fg-rgb), 0.35);
   --fg-muted: rgba(var(--fg-rgb), 0.45);
   --border: rgba(var(--fg-rgb), 0.25);
   --border-subtle: rgba(var(--fg-rgb), 0.18);
   --border-faint: rgba(var(--fg-rgb), 0.15);
-  
+
   --accent: #e8e4da;
   --accent-rgb: 232, 228, 218;
 }
@@ -23,14 +23,14 @@
   --fg: #000000;
   --fg-rgb: 0, 0, 0;
   --bg-rgb: 255, 255, 255;
-  
+
   --fg-dim: rgba(var(--fg-rgb), 0.55);
   --fg-faint: rgba(var(--fg-rgb), 0.35);
   --fg-muted: rgba(var(--fg-rgb), 0.45);
   --border: rgba(var(--fg-rgb), 0.25);
   --border-subtle: rgba(var(--fg-rgb), 0.18);
   --border-faint: rgba(var(--fg-rgb), 0.15);
-  
+
   --accent: #000000;
   --accent-rgb: 0, 0, 0;
 }
@@ -57,6 +57,17 @@ body {
   color: var(--fg);
   font-family: 'Courier Prime', monospace;
   min-height: 100vh;
+}
+
+/* Global transitions for interactive elements */
+a, button, input {
+  transition: all 0.15s ease;
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
 }
 
 .app {
@@ -203,6 +214,54 @@ body {
 @media (min-width: 640px) {
   .separator {
     display: inline;
+  }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+@media (min-width: 640px) {
+  .header-actions {
+    gap: 16px;
+  }
+}
+
+.icon-link {
+  color: var(--fg-dim);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.icon-link:hover {
+  color: var(--fg);
+  background: rgba(var(--fg-rgb), 0.08);
+}
+
+.icon-link:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+
+.icon-link svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (min-width: 640px) {
+  .icon-link svg {
+    width: 18px;
+    height: 18px;
   }
 }
 
@@ -373,78 +432,6 @@ body {
   cursor: not-allowed;
 }
 
-.timer-box {
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-}
-
-@media (min-width: 640px) {
-  .timer-box {
-    padding: 16px 22px;
-  }
-}
-
-.timer-label {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--fg-muted);
-}
-
-@media (min-width: 640px) {
-  .timer-label {
-    font-size: 12px;
-  }
-}
-
-.timer-val {
-  font-size: 18px;
-  font-family: 'Courier Prime', monospace;
-  color: var(--fg);
-  letter-spacing: 0.05em;
-  margin-top: 4px;
-}
-
-@media (min-width: 640px) {
-  .timer-val {
-    font-size: 22px;
-  }
-}
-
-.timer-dots {
-  display: none;
-}
-
-@media (min-width: 480px) {
-  .timer-dots {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-  }
-}
-
-.tdot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: rgba(var(--fg-rgb), 0.4);
-}
-
-@media (min-width: 640px) {
-  .tdot {
-    width: 5px;
-    height: 5px;
-  }
-}
-
-.tdot.active {
-  background: var(--fg);
-}
-
 .inbox-header {
   padding: 12px 18px 10px;
   font-size: 11px;
@@ -480,11 +467,12 @@ body {
   background: rgba(var(--fg-rgb), 0.15);
 }
 
+/* Mail item with improved hover and active states */
 .mail-item {
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border-faint);
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background 0.2s, transform 0.1s;
   position: relative;
 }
 
@@ -494,12 +482,44 @@ body {
   }
 }
 
+.mail-item:active {
+  transform: scale(0.995);
+}
+
 .mail-item:hover {
-  background: rgba(var(--fg-rgb), 0.08);
+  background: rgba(var(--fg-rgb), 0.05);
 }
 
 .mail-item.active {
-  background: rgba(var(--fg-rgb), 0.12);
+  background: rgba(var(--fg-rgb), 0.08);
+  border-left: 2px solid var(--fg);
+  padding-left: calc(1.5rem - 2px);
+}
+
+@media (min-width: 640px) {
+  .mail-item.active {
+    padding-left: calc(22px - 2px);
+  }
+}
+
+/* Unread indicator - subtle dot on the left */
+.mail-item.unread::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--fg);
+  opacity: 0.6;
+}
+
+@media (min-width: 640px) {
+  .mail-item.unread::before {
+    left: 12px;
+  }
 }
 
 .mail-item.unread .mail-from {
@@ -557,15 +577,76 @@ body {
   }
 }
 
+.mail-delete {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: rgba(var(--fg-rgb), 0.2);
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+
+@media (min-width: 640px) {
+  .mail-delete {
+    right: 12px;
+    width: 20px;
+    height: 20px;
+    font-size: 16px;
+  }
+}
+
+.mail-item:hover .mail-delete {
+  opacity: 1;
+}
+
+.mail-item.active .mail-delete {
+  opacity: 1;
+}
+
+.mail-delete:hover {
+  color: rgba(232, 100, 100, 0.8);
+}
+
+/* Empty state with animated envelope icon */
 .empty-state {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 24px;
-  min-height: 100px;
+  gap: 12px;
+  padding: 32px 24px;
+  min-height: 120px;
+}
+
+.empty-state .empty-icon {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 8px;
+  opacity: 0.3;
+  animation: emptyPulse 3s ease-in-out infinite;
+}
+
+@keyframes emptyPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
 }
 
 @media (min-width: 640px) {
@@ -618,6 +699,56 @@ body {
   .empty-text {
     font-size: 13px;
   }
+}
+
+/* Loading skeleton for inbox */
+.skeleton-list {
+  flex: 1;
+  overflow: hidden;
+}
+
+.skeleton-item {
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--border-faint);
+}
+
+.skeleton-line {
+  height: 12px;
+  margin-bottom: 8px;
+  background: rgba(var(--fg-rgb), 0.06);
+  border-radius: 2px;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-line:last-child {
+  margin-bottom: 0;
+}
+
+.skeleton-line.short {
+  width: 40%;
+}
+
+.skeleton-line.medium {
+  width: 70%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-line {
+  background: linear-gradient(
+    90deg,
+    rgba(var(--fg-rgb), 0.03) 0%,
+    rgba(var(--fg-rgb), 0.08) 50%,
+    rgba(var(--fg-rgb), 0.03) 100%
+  );
+  background-size: 200% 100%;
 }
 
 .content {
@@ -974,43 +1105,6 @@ body {
   }
 }
 
-.mail-delete {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  width: 18px;
-  height: 18px;
-  border: none;
-  background: transparent;
-  color: rgba(var(--fg-rgb), 0.2);
-  font-size: 14px;
-  cursor: pointer;
-  opacity: 0;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  line-height: 1;
-}
-
-@media (min-width: 640px) {
-  .mail-delete {
-    right: 12px;
-    width: 20px;
-    height: 20px;
-    font-size: 16px;
-  }
-}
-
-.mail-item:hover .mail-delete {
-  opacity: 1;
-}
-
-.mail-delete:hover {
-  color: rgba(232, 100, 100, 0.8);
-}
-
 /* Landing Screen */
 .landing {
   flex: 1;
@@ -1097,6 +1191,14 @@ body {
   color: var(--fg-dim);
 }
 
+.username-input:hover {
+  background: rgba(var(--fg-rgb), 0.02);
+}
+
+.username-input:focus {
+  background: rgba(var(--fg-rgb), 0.05);
+}
+
 .input-domain {
   padding: 14px 16px;
   color: var(--fg-dim);
@@ -1126,62 +1228,45 @@ body {
   color: var(--fg-faint);
   letter-spacing: 0.08em;
 }
-.toast-container { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 12px; z-index: 100; }
-.toast { 
-  padding: 12px 20px; 
-  background: rgba(var(--bg-rgb), 0.95); 
-  border: 1px solid var(--border); 
-  color: var(--fg); 
-  font-size: 12px; 
-  letter-spacing: 0.05em; 
-  text-transform: uppercase; 
+
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 100;
+}
+
+.toast {
+  padding: 12px 20px;
+  background: rgba(var(--bg-rgb), 0.95);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   animation: slideIn 0.3s ease-out forwards;
   backdrop-filter: blur(4px);
 }
-.toast-error { border-left: 3px solid rgba(232, 100, 100, 0.8); }
-.toast-success { border-left: 3px solid rgba(100, 232, 100, 0.8); }
-@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-left: auto;
+.toast-error {
+  border-left: 3px solid rgba(232, 100, 100, 0.8);
 }
 
-@media (min-width: 640px) {
-  .header-actions {
-    gap: 16px;
+.toast-success {
+  border-left: 3px solid rgba(100, 232, 100, 0.8);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
   }
-}
-
-.icon-link {
-  color: var(--fg-dim);
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-}
-
-.icon-link:hover {
-  color: var(--fg);
-  background: rgba(var(--fg-rgb), 0.08);
-}
-
-.icon-link svg {
-  width: 16px;
-  height: 16px;
-}
-
-@media (min-width: 640px) {
-  .icon-link svg {
-    width: 18px;
-    height: 18px;
+  to {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 
@@ -1222,7 +1307,7 @@ body {
   letter-spacing: 0.1em;
 }
 
-/* Privacy Policy Page */
+/* Privacy Policy & About Pages */
 .content-page {
   flex: 1;
   overflow-y: auto;
@@ -1339,4 +1424,77 @@ body {
 
 .back-link svg {
   opacity: 0.7;
+}
+
+/* Timer Box */
+.timer-box {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .timer-box {
+    padding: 16px 22px;
+  }
+}
+
+.timer-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+@media (min-width: 640px) {
+  .timer-label {
+    font-size: 12px;
+  }
+}
+
+.timer-val {
+  font-size: 18px;
+  font-family: 'Courier Prime', monospace;
+  color: var(--fg);
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+}
+
+@media (min-width: 640px) {
+  .timer-val {
+    font-size: 22px;
+  }
+}
+
+.timer-dots {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .timer-dots {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+}
+
+.tdot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(var(--fg-rgb), 0.4);
+}
+
+@media (min-width: 640px) {
+  .tdot {
+    width: 5px;
+    height: 5px;
+  }
+}
+
+.tdot.active {
+  background: var(--fg);
 }

@@ -90,6 +90,7 @@ export default function Home() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [nextRefreshIn, setNextRefreshIn] = useState(10);
+  const [isLoadingEmails, setIsLoadingEmails] = useState(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const seenEmailIds = useRef<Set<number>>(new Set());
 
@@ -146,9 +147,10 @@ export default function Home() {
 
   const loadEmails = useCallback(async () => {
     if (!currentAddr) return;
+    setIsLoadingEmails(true);
     try {
       const emails = await fetchEmails(currentAddr);
-      
+
       const isInitialLoad = seenEmailIds.current.size === 0;
       let hasNew = false;
 
@@ -182,6 +184,8 @@ export default function Home() {
       } else {
         setIsApiUp(false);
       }
+    } finally {
+      setIsLoadingEmails(false);
     }
   }, [currentAddr, clearLocalSession, addToast]);
 
@@ -441,7 +445,7 @@ export default function Home() {
               Instant. Private. Ephemeral.
             </p>
 
-            <form onSubmit={handleUsernameSubmit} className="landing-form">
+            <form onSubmit={handleUsernameSubmit} className="landing-form" aria-label="Create email address">
               <div className="input-group">
                 <input
                   type="text"
@@ -453,16 +457,19 @@ export default function Home() {
                   className="username-input"
                   disabled={isGenerating}
                   autoFocus
+                  aria-label="Username"
+                  autoComplete="username"
                 />
-                <span className="input-domain">@xelio.me</span>
+                <span className="input-domain" aria-hidden="true">@xelio.me</span>
               </div>
               <button
                 type="submit"
                 className="btn-solid get-started-btn"
                 disabled={isGenerating}
+                aria-label="Create email address"
               >
                 {isGenerating ? (
-                  <span className="loading-dots">
+                  <span className="loading-dots" aria-label="Creating address...">
                     <span className="ldot" />
                     <span className="ldot" />
                     <span className="ldot" />
@@ -621,9 +628,22 @@ export default function Home() {
           </div>
 
           <div className="inbox-list">
-            {mails.length === 0 ? (
+            {mails.length === 0 && isLoadingEmails ? (
+              <div className="skeleton-list">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="skeleton-item">
+                    <div className="skeleton-line short" />
+                    <div className="skeleton-line medium" />
+                  </div>
+                ))}
+              </div>
+            ) : mails.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-dots">
+                <svg className="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="7" width="18" height="13" rx="2"/>
+                  <path d="M3 9l9 7 9-7"/>
+                </svg>
+                <div className="empty-dots" aria-hidden="true">
                   {[0, 1, 2, 3, 4].map((i) => (
                     <div key={i} className={`edot${i === 0 ? " lit" : ""}`} />
                   ))}
