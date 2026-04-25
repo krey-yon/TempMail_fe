@@ -1,0 +1,9 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Block API routes from being indexed
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://xelio.me/sitemap.xml

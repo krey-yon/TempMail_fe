@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import RocketBlast from "@/components/ascii/rocket-blast";
+import { JsonLd } from "@/components/json-ld";
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   fetchEmails,
@@ -52,8 +54,8 @@ const playNotificationSound = () => {
 
 const getIframeDoc = (html: string, currentTheme: string) => {
   const isDark = currentTheme === "dark";
-  const fg = isDark ? "#e8e4da" : "#1a1a1a";
-  const linkColor = isDark ? "#8cb4ff" : "#0056b3";
+  const fg = isDark ? "#e8e4da" : "#000000";
+  const linkColor = isDark ? "#8cb4ff" : "#0000ff";
   
   // Inject base styles to match the TempMail theme, but use !important to override inline styles where needed.
   const style = `
@@ -66,9 +68,10 @@ const getIframeDoc = (html: string, currentTheme: string) => {
         padding: 0;
         font-size: 14px;
         line-height: 1.6;
+        font-weight: 500;
       }
-      a { color: ${linkColor} !important; }
-      * { color: ${fg} !important; background-color: transparent !important; }
+      a { color: ${linkColor} !important; text-decoration: underline !important; }
+      * { color: ${fg} !important; background-color: transparent !important; border-color: ${fg}22 !important; }
     </style>
   `;
   return style + html;
@@ -86,6 +89,7 @@ export default function Home() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [nextRefreshIn, setNextRefreshIn] = useState(10);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const seenEmailIds = useRef<Set<number>>(new Set());
 
@@ -271,17 +275,17 @@ export default function Home() {
   useEffect(() => {
     const unread = mails.filter((m) => m.unread).length;
     if (!isApiUp) {
-      document.title = "XELIO · offline";
+      document.title = "Xelio · offline";
     } else if (mails.length > 0) {
       if (unread > 0) {
-        document.title = `XELIO · ${unread} new`;
+        document.title = `Xelio · ${unread} new`;
       } else {
-        document.title = `XELIO · ${mails.length}`;
+        document.title = `Xelio · ${mails.length}`;
       }
     } else if (currentAddr) {
-      document.title = "XELIO · waiting";
+      document.title = "Xelio · waiting";
     } else {
-      document.title = "XELIO";
+      document.title = "Xelio";
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mails.length, isApiUp, currentAddr]);
@@ -314,6 +318,17 @@ export default function Home() {
       }
     };
   }, [currentAddr, isGenerating, loadEmails]);
+
+  // Auto-refresh countdown
+  useEffect(() => {
+    if (!currentAddr) return;
+
+    const countdown = setInterval(() => {
+      setNextRefreshIn(prev => prev <= 1 ? 10 : prev - 1);
+    }, 1000);
+
+    return () => clearInterval(countdown);
+  }, [currentAddr]);
 
   useEffect(() => {
     let isVisible = !document.hidden;
@@ -376,6 +391,19 @@ export default function Home() {
   if (!hasEnteredUsername) {
     return (
       <div className="app">
+        <JsonLd data={{
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          name: "Xelio",
+          description: "Free temporary disposable email service. Create instant email addresses to protect your inbox from spam.",
+          url: "https://xelio.me",
+          applicationCategory: "UtilityApplication",
+          operatingSystem: "Web",
+          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+          creator: { "@type": "Person", name: "krey-yon", url: "https://github.com/krey-yon" },
+          featureList: ["Temporary email", "Disposable addresses", "Auto-delete", "No registration", "Free"],
+          breadcrumb: { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://xelio.me" }] }
+        }} />
         {renderToasts()}
         <div className="stipple-bg" />
         <div className="dither-overlay" />
@@ -384,7 +412,7 @@ export default function Home() {
         <div className="header">
           <div className="logo">
             <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="26" height="18" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/><path d="M3 9l13 10 13-10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            XELIO
+            Xelio
           </div>
           <div className="header-actions">
             <button className="icon-link" onClick={toggleTheme} title="Toggle Theme">
@@ -394,12 +422,12 @@ export default function Home() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
               )}
             </button>
-            <button className="icon-link" onClick={() => addToast("Privacy Policy coming soon", "success")} title="Privacy Policy">
+            <Link href="/privacy" className="icon-link" title="Privacy Policy">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-            </button>
-            <button className="icon-link" onClick={() => addToast("TempMail built by krey-yon", "success")} title="About">
+            </Link>
+            <Link href="/about" className="icon-link" title="About">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-            </button>
+            </Link>
             <a href="https://github.com/krey-yon/TempMail_fe" target="_blank" rel="noopener noreferrer" className="icon-link" title="GitHub">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
             </a>
@@ -463,8 +491,8 @@ export default function Home() {
 
         <div className="status-bar">
           <div className="status-left">
-            <div className={`status-dot ${isApiUp ? "" : "offline"}`} />
-            <span>{isApiUp ? "api ready" : "api offline"}</span>
+            <div className={`status-dot ${isApiUp ? "active" : "offline"}`} />
+            <span>{isApiUp ? "api active" : "api offline"}</span>
           </div>
           <div className="status-msg">{status}</div>
         </div>
@@ -475,6 +503,20 @@ export default function Home() {
   // Email Dashboard
   return (
     <div className="app">
+      <JsonLd data={{
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "Xelio",
+        description: "Free temporary disposable email service. Create instant email addresses to protect your inbox from spam.",
+        url: "https://xelio.me",
+        applicationCategory: "UtilityApplication",
+        operatingSystem: "Web",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+        creator: { "@type": "Person", name: "krey-yon", url: "https://github.com/krey-yon" },
+        featureList: ["Temporary email", "Disposable addresses", "Auto-delete", "No registration", "Free"],
+        screenshot: "https://xelio.me/screenshot.png",
+        breadcrumb: { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://xelio.me" }] }
+      }} />
       {renderToasts()}
       <div className="stipple-bg" />
       <div className="dither-overlay" />
@@ -507,14 +549,9 @@ export default function Home() {
               strokeLinejoin="round"
             />
           </svg>
-          XELIO
+          Xelio
         </div>
-        <div className="header-right">
-          <span>{mails.length} messages</span>
-          <span className="separator">|</span>
-          <span>{currentAddr ? currentAddr.split("@")[1] : "xelio.me"}</span>
-        </div>
-          <div className="header-actions">
+        <div className="header-actions">
             <button className="icon-link" onClick={toggleTheme} title="Toggle Theme">
               {theme === "dark" ? (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
@@ -522,12 +559,12 @@ export default function Home() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
               )}
             </button>
-            <button className="icon-link" onClick={() => addToast("Privacy Policy coming soon", "success")} title="Privacy Policy">
+            <Link href="/privacy" className="icon-link" title="Privacy Policy">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-            </button>
-            <button className="icon-link" onClick={() => addToast("TempMail built by krey-yon", "success")} title="About">
+            </Link>
+            <Link href="/about" className="icon-link" title="About">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-            </button>
+            </Link>
             <a href="https://github.com/krey-yon/TempMail_fe" target="_blank" rel="noopener noreferrer" className="icon-link" title="GitHub">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
             </a>
@@ -668,8 +705,10 @@ export default function Home() {
 
       <div className="status-bar">
         <div className="status-left">
-          <div className={`status-dot ${isApiUp ? "" : "offline"}`} />
-          <span>live · auto-refresh</span>
+          <div className={`status-dot ${isApiUp ? "active" : "offline"}`} />
+          <span>{isApiUp ? "api active" : "api offline"}</span>
+          <span className="separator">|</span>
+          <span>refresh in {nextRefreshIn}s</span>
         </div>
         <div className="status-msg">{status}</div>
       </div>
