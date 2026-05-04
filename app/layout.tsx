@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -138,6 +139,11 @@ export default function RootLayout({
       <body className="h-full">
         {children}
         <Analytics />
+        <Script
+          src="https://analytics.kreyon.in/script.js"
+          data-website-id="0e8b242c-5e36-449a-bc9e-9ab7d4c88308"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
