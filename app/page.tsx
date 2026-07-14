@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import RocketBlast from "@/components/ascii/rocket-blast";
+import ParticleField from "@/components/particle-field";
 import { JsonLd } from "@/components/json-ld";
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
@@ -439,59 +440,72 @@ export default function Home() {
         </div>
 
         <div className="landing">
-          <div className="landing-content">
-            <h1 className="landing-title">Temporary email</h1>
-            <p className="landing-subtitle">
-              Instant. Private. Ephemeral.
-            </p>
+          <div className="landing-split">
+            <div className="landing-left">
+              <div className="landing-content">
+                <div className="landing-eyebrow">Disposable inbox</div>
+                <h1 className="landing-title">Temporary email</h1>
+                <p className="landing-subtitle">
+                  Get a free throwaway address in seconds. No signup, no spam, no trace.
+                </p>
 
-            <form onSubmit={handleUsernameSubmit} className="landing-form" aria-label="Create email address">
-              <div className="input-group">
-                <input
-                  type="text"
-                  value={inputUsername}
-                  onChange={(e) => {
-                    setInputUsername(e.target.value);
-                  }}
-                  placeholder="username"
-                  className="username-input"
-                  disabled={isGenerating}
-                  autoFocus
-                  aria-label="Username"
-                  autoComplete="username"
-                />
-                <span className="input-domain" aria-hidden="true">@xelio.me</span>
+                <form onSubmit={handleUsernameSubmit} className="landing-form" aria-label="Create email address">
+                  <div className="input-group">
+                    <input
+                      type="text"
+                      value={inputUsername}
+                      onChange={(e) => {
+                        setInputUsername(e.target.value);
+                      }}
+                      placeholder="username"
+                      className="username-input"
+                      disabled={isGenerating}
+                      autoFocus
+                      aria-label="Username"
+                      autoComplete="username"
+                    />
+                    <span className="input-domain" aria-hidden="true">@xelio.me</span>
+                  </div>
+                  <button
+                    type="submit"
+                    className="btn-solid get-started-btn"
+                    disabled={isGenerating}
+                    aria-label="Create email address"
+                  >
+                    {isGenerating ? (
+                      <span className="loading-dots" aria-label="Creating address...">
+                        <span className="ldot" />
+                        <span className="ldot" />
+                        <span className="ldot" />
+                      </span>
+                    ) : (
+                      "Create Address"
+                    )}
+                  </button>
+                </form>
+
+                <div className="landing-hint">
+                  <span>3-32 characters · a-z, 0-9, -, _</span>
+                </div>
+
+                <ul className="landing-features">
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    No registration required
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Private & encrypted
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Auto-deletes after use
+                  </li>
+                </ul>
               </div>
-              <button
-                type="submit"
-                className="btn-solid get-started-btn"
-                disabled={isGenerating}
-                aria-label="Create email address"
-              >
-                {isGenerating ? (
-                  <span className="loading-dots" aria-label="Creating address...">
-                    <span className="ldot" />
-                    <span className="ldot" />
-                    <span className="ldot" />
-                  </span>
-                ) : (
-                  "Create Address"
-                )}
-              </button>
-            </form>
-
-            <div className="landing-hint">
-              <span>
-                3-32 characters · a-z, 0-9, -, _
-              </span>
             </div>
-            
-            <div className="author-credit">
-              <div><a href="https://github.com/krey-yon" target="_blank" rel="noopener noreferrer">krey-yon</a></div>
-              <div className="os-badge">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
-                OPEN SOURCE
-              </div>
+            <div className="landing-right">
+              <ParticleField />
             </div>
           </div>
         </div>
