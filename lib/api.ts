@@ -6,8 +6,16 @@ export interface ApiResponse<T> {
   error: string | null;
 }
 
+export class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
 export interface MailRow {
-  id: number;
+  id: string;
   date: string;
   sender: string;
   recipients: string;
@@ -15,7 +23,7 @@ export interface MailRow {
 }
 
 export interface ParsedMail {
-  id: number;
+  id: string;
   from: string;
   subject: string;
   body: string;
@@ -24,17 +32,41 @@ export interface ParsedMail {
   date: string;
 }
 
-export interface EmailAddress {
+export interface Session {
   address: string;
-  created_at: string;
-  email_count?: number;
-}
-
-export interface CreateEmailResponse {
-  address: string;
+  token: string;
   created_at: string;
 }
 
+interface CreateEmailApiResponse {
+  address: string;
+  created_at: string;
+  access_token: string;
+}
+
+
+function authHeaders(token: string): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    "x-mailbox-token": token,
+  };
+}
+
+async function parseResponse<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    let message = `Request failed (${res.status})`;
+    try {
+      const json: ApiResponse<unknown> = await res.json();
+      if (json.error) message = json.error;
+    } catch {}
+    throw new ApiError(res.status, message);
+  }
+  const json: ApiResponse<T> = await res.json();
+  if (!json.success || json.data === null || json.data === undefined) {
+    throw new ApiError(res.status, json.error || "Request failed");
+  }
+  return json.data;
+}
 
 function decodeQuotedPrintable(str: string): string {
   try {
@@ -169,18 +201,14 @@ function formatRelativeTime(dateStr: string): string {
   }
 }
 
-export async function fetchEmails(address: string): Promise<ParsedMail[]> {
+export async function fetchEmails(address: string, token: string): Promise<ParsedMail[]> {
   const res = await fetch(`${API_BASE}/api/emails/${encodeURIComponent(address)}`, {
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(token),
   });
 
-  const json: ApiResponse<MailRow[]> = await res.json();
+  const mails = await parseResponse<MailRow[]>(res);
 
-  if (!json.success || !json.data) {
-    throw new Error(json.error || "Failed to fetch emails");
-  }
-
-  return json.data.map((mail) => {
+  return mails.map((mail) => {
     const { subject, body, isHtml } = parseEmailData(mail.data);
     return {
       id: mail.id,
@@ -194,37 +222,13 @@ export async function fetchEmails(address: string): Promise<ParsedMail[]> {
   });
 }
 
-export async function fetchEmail(address: string, id: number): Promise<ParsedMail | null> {
-  const res = await fetch(`${API_BASE}/api/emails/${encodeURIComponent(address)}/${id}`, {
-    headers: { "Content-Type": "application/json" },
-  });
-
-  const json: ApiResponse<MailRow> = await res.json();
-
-  if (!json.success || !json.data) {
-    return null;
-  }
-
-  const { subject, body, isHtml } = parseEmailData(json.data.data);
-  return {
-    id: json.data.id,
-    from: json.data.sender,
-    subject,
-    body,
-    isHtml,
-    time: formatRelativeTime(json.data.date),
-    date: json.data.date,
-  };
-}
-
-export async function deleteEmail(address: string, id: number): Promise<boolean> {
+export async function deleteEmail(address: string, token: string, id: string): Promise<void> {
   const res = await fetch(`${API_BASE}/api/emails/${encodeURIComponent(address)}/${id}`, {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(token),
   });
 
-  const json: ApiResponse<null> = await res.json();
-  return json.success;
+  await parseResponse<unknown>(res);
 }
 
 export async function checkHealth(): Promise<boolean> {
@@ -237,45 +241,27 @@ export async function checkHealth(): Promise<boolean> {
   }
 }
 
-export async function createEmailAddress(username: string): Promise<EmailAddress> {
+export async function createEmailAddress(username: string): Promise<Session> {
   const res = await fetch(`${API_BASE}/api/emails`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username }),
   });
 
-  const json: ApiResponse<CreateEmailResponse> = await res.json();
-
-  if (!json.success || !json.data) {
-    throw new Error(json.error || "Failed to create email address");
-  }
+  const data = await parseResponse<CreateEmailApiResponse>(res);
 
   return {
-    address: json.data.address,
-    created_at: json.data.created_at,
+    address: data.address,
+    token: data.access_token,
+    created_at: data.created_at,
   };
 }
 
-export async function listEmailAddresses(): Promise<EmailAddress[]> {
-  const res = await fetch(`${API_BASE}/api/emails`, {
-    headers: { "Content-Type": "application/json" },
-  });
-
-  const json: ApiResponse<EmailAddress[]> = await res.json();
-
-  if (!json.success || !json.data) {
-    throw new Error(json.error || "Failed to list email addresses");
-  }
-
-  return json.data;
-}
-
-export async function deleteEmailAddress(address: string): Promise<boolean> {
+export async function deleteEmailAddress(address: string, token: string): Promise<void> {
   const res = await fetch(`${API_BASE}/api/emails/${encodeURIComponent(address)}`, {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(token),
   });
 
-  const json: ApiResponse<{ message: string; address: string }> = await res.json();
-  return json.success;
+  await parseResponse<unknown>(res);
 }

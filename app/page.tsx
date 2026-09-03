@@ -11,7 +11,9 @@ import {
   deleteEmailAddress,
   checkHealth,
   createEmailAddress,
+  ApiError,
   type ParsedMail,
+  type Session,
 } from "@/lib/api";
 
 interface ToastMessage {
@@ -24,7 +26,7 @@ interface Mail extends ParsedMail {
   unread: boolean;
 }
 
-const POLL_INTERVAL = 5000;
+const STORAGE_KEY = "xelio_session";
 
 const playNotificationSound = () => {
   try {
@@ -79,13 +81,12 @@ const getIframeDoc = (html: string, currentTheme: string) => {
 };
 
 export default function Home() {
-  const [currentAddr, setCurrentAddr] = useState("");
+  const [session, setSession] = useState<Session | null>(null);
   const [mails, setMails] = useState<Mail[]>([]);
-  const [activeMailId, setActiveMailId] = useState<number | null>(null);
+  const [activeMailId, setActiveMailId] = useState<string | null>(null);
   const [status, setStatus] = useState("ready");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isApiUp, setIsApiUp] = useState(true);
-  const [hasEnteredUsername, setHasEnteredUsername] = useState(false);
   const [inputUsername, setInputUsername] = useState("");
   const [isInitializing, setIsInitializing] = useState(true);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -93,15 +94,14 @@ export default function Home() {
   const [nextRefreshIn, setNextRefreshIn] = useState(10);
   const [isLoadingEmails, setIsLoadingEmails] = useState(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const seenEmailIds = useRef<Set<number>>(new Set());
+  const seenEmailIds = useRef<Set<string>>(new Set());
 
   const clearLocalSession = useCallback(() => {
-    setCurrentAddr("");
-    localStorage.removeItem("xelio_addr");
+    setSession(null);
+    localStorage.removeItem(STORAGE_KEY);
     setMails([]);
     seenEmailIds.current.clear();
     setActiveMailId(null);
-    setHasEnteredUsername(false);
     setInputUsername("");
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
@@ -122,10 +122,14 @@ export default function Home() {
 
   
   useEffect(() => {
-    const savedAddr = localStorage.getItem("xelio_addr");
-    if (savedAddr) {
-      setCurrentAddr(savedAddr);
-      setHasEnteredUsername(true);
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      try {
+        const saved: Session = JSON.parse(raw);
+        if (saved.address && saved.token) {
+          setSession(saved);
+        }
+      } catch {}
     }
     const savedTheme = localStorage.getItem("xelio_theme") as "dark" | "light" | null;
     if (savedTheme) {
@@ -147,10 +151,10 @@ export default function Home() {
   }, []);
 
   const loadEmails = useCallback(async () => {
-    if (!currentAddr) return;
+    if (!session) return;
     setIsLoadingEmails(true);
     try {
-      const emails = await fetchEmails(currentAddr);
+      const emails = await fetchEmails(session.address, session.token);
 
       const isInitialLoad = seenEmailIds.current.size === 0;
       let hasNew = false;
@@ -177,18 +181,21 @@ export default function Home() {
         });
       });
       setIsApiUp(true);
-    } catch (err: any) {
-      const msg = err?.message?.toLowerCase() || "";
-      if (msg.includes("not found") || msg.includes("invalid") || msg.includes("expire")) {
-        clearLocalSession();
-        addToast("Session expired", "error");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 401 || err.status === 404) {
+          clearLocalSession();
+          addToast("Session expired", "error");
+        } else {
+          setIsApiUp(false);
+        }
       } else {
         setIsApiUp(false);
       }
     } finally {
       setIsLoadingEmails(false);
     }
-  }, [currentAddr, clearLocalSession, addToast]);
+  }, [session, clearLocalSession, addToast]);
 
   const createAddr = useCallback(
     async (username: string) => {
@@ -197,16 +204,14 @@ export default function Home() {
       setStatus("creating address");
 
       try {
-        const result = await createEmailAddress(username);
-        setCurrentAddr(result.address);
-        localStorage.setItem("xelio_addr", result.address);
-        setHasEnteredUsername(true);
+        const newSession = await createEmailAddress(username);
+        setSession(newSession);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newSession));
         setStatus("ready");
         setMails([]);
-    seenEmailIds.current.clear();
-      } catch (err: any) {
-        const errorMsg = err?.message || "Failed to create address";
-        // Show the exact error message from the API
+        seenEmailIds.current.clear();
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : "Failed to create address";
         addToast(errorMsg, "error");
       } finally {
         setIsGenerating(false);
@@ -234,25 +239,25 @@ export default function Home() {
   };
 
   const removeAddr = useCallback(async () => {
-    if (!currentAddr) return;
+    if (!session) return;
     try {
-      await deleteEmailAddress(currentAddr);
+      await deleteEmailAddress(session.address, session.token);
       clearLocalSession();
       setStatus("address deleted");
     } catch {
       setStatus("failed to delete address");
     }
-  }, [currentAddr, clearLocalSession]);
+  }, [session, clearLocalSession]);
 
   const copyAddr = useCallback(() => {
-    if (currentAddr) {
-      navigator.clipboard.writeText(currentAddr).catch(() => {});
+    if (session) {
+      navigator.clipboard.writeText(session.address).catch(() => {});
       addToast("Copied to clipboard", "success");
       setStatus("ready");
     }
-  }, [currentAddr, addToast]);
+  }, [session, addToast]);
 
-  const openMail = useCallback((id: number) => {
+  const openMail = useCallback((id: string) => {
     setMails((prev) =>
       prev.map((m) => (m.id === id ? { ...m, unread: false } : m)),
     );
@@ -260,11 +265,11 @@ export default function Home() {
   }, []);
 
   const removeMail = useCallback(
-    async (id: number, e: React.MouseEvent) => {
+    async (id: string, e: React.MouseEvent) => {
       e.stopPropagation();
-      if (!currentAddr) return;
+      if (!session) return;
       try {
-        await deleteEmail(currentAddr, id);
+        await deleteEmail(session.address, session.token, id);
         setMails((prev) => prev.filter((m) => m.id !== id));
         if (activeMailId === id) setActiveMailId(null);
         setStatus("message deleted");
@@ -273,7 +278,7 @@ export default function Home() {
         setStatus("failed to delete");
       }
     },
-    [currentAddr, activeMailId],
+    [session, activeMailId],
   );
 
   // Dynamic page title
@@ -287,16 +292,15 @@ export default function Home() {
       } else {
         document.title = `Xelio · ${mails.length}`;
       }
-    } else if (currentAddr) {
+    } else if (session) {
       document.title = "Xelio · waiting";
     } else {
       document.title = "Xelio";
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mails.length, isApiUp, currentAddr]);
+  }, [mails.length, isApiUp, session]);
 
   useEffect(() => {
-    if (!currentAddr || isGenerating) return;
+    if (!session || isGenerating) return;
 
     let isVisible = !document.hidden;
     const handleVisibilityChange = () => {
@@ -314,7 +318,7 @@ export default function Home() {
       if (isVisible) {
         loadEmails();
       }
-    }, 10000); // Reduced polling frequency to every 10 seconds
+    }, 10000);
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -322,18 +326,18 @@ export default function Home() {
         clearInterval(pollIntervalRef.current);
       }
     };
-  }, [currentAddr, isGenerating, loadEmails]);
+  }, [session, isGenerating, loadEmails]);
 
   // Auto-refresh countdown
   useEffect(() => {
-    if (!currentAddr) return;
+    if (!session) return;
 
     const countdown = setInterval(() => {
       setNextRefreshIn(prev => prev <= 1 ? 10 : prev - 1);
     }, 1000);
 
     return () => clearInterval(countdown);
-  }, [currentAddr]);
+  }, [session]);
 
   useEffect(() => {
     let isVisible = !document.hidden;
@@ -370,6 +374,7 @@ export default function Home() {
   }, [mails.length, isApiUp]);
 
   const activeMail = mails.find((m) => m.id === activeMailId);
+  const currentAddr = session?.address || "";
   const addrParts = currentAddr.split("@");
 
   const renderToasts = () => (
@@ -392,8 +397,7 @@ export default function Home() {
     );
   }
 
-  // Landing Screen
-  if (!hasEnteredUsername) {
+  if (!session) {
     return (
       <div className="app">
         <JsonLd data={{
@@ -610,7 +614,7 @@ export default function Home() {
               <button
                 className="icon-link"
                 onClick={copyAddr}
-                disabled={!currentAddr}
+                disabled={!session}
                 title="Copy Address"
               >
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -621,7 +625,7 @@ export default function Home() {
                   loadEmails();
                   addToast("Refreshed inbox", "success");
                 }}
-                disabled={!currentAddr || isGenerating}
+                disabled={!session || isGenerating}
                 title="Refresh Inbox"
               >
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
@@ -629,7 +633,7 @@ export default function Home() {
               <button
                 className="icon-link"
                 onClick={removeAddr}
-                disabled={!currentAddr}
+                disabled={!session}
                 title="Delete Address"
               >
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
@@ -716,7 +720,7 @@ export default function Home() {
                   <iframe 
                     srcDoc={getIframeDoc(activeMail.body, theme)} 
                     style={{ width: '100%', height: '100%', border: 'none', minHeight: '400px', background: 'transparent', borderRadius: '4px' }} 
-                    sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
+                    sandbox="allow-popups"
                   />
                 ) : (
                   activeMail.body.split("\n").map((line, i) => (
