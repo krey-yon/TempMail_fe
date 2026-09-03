@@ -141,7 +141,7 @@ export default function RootLayout({
         <Analytics />
         <Script
           src="https://analytics.kreyon.in/script.js"
-          data-website-id="0e8b242c-5e36-449a-bc9e-9ab7d4c88308"
+          data-website-id="44045f08-7746-4801-bb4b-a94bd052a28a"
           strategy="afterInteractive"
         />
       </body>
