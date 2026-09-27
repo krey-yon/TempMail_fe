@@ -6,7 +6,7 @@ const navLink = "rounded-full px-3 py-1.5 text-sm text-ink-2 transition-colors h
 
 export function SiteHeader() {
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-4 px-4 sm:px-6">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-4 px-4 sm:px-6 [view-transition-name:site-header]">
       <Link href="/" className="group flex items-baseline gap-2" aria-label="Xelio home">
         <span className="font-display text-[26px] leading-none font-medium tracking-tight italic">Xelio</span>
         <span className="hidden font-mono text-[10px] tracking-[0.18em] text-ink-3 uppercase sm:inline">poste restante</span>

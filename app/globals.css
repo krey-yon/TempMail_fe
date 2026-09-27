@@ -166,6 +166,147 @@
   animation: blink 1.1s steps(1) infinite;
 }
 
+@keyframes goo-drop {
+  0% {
+    scale: 0;
+    translate: 0 0;
+  }
+  25% {
+    scale: 1;
+    translate: 0 0;
+  }
+  60% {
+    scale: 1;
+    translate: 0 14px;
+  }
+  100% {
+    scale: 0.4;
+    translate: 0 18px;
+  }
+}
+
+@keyframes goo-swell {
+  55% {
+    scale: 1 1;
+  }
+  68% {
+    scale: 1.06 1.35;
+  }
+  84% {
+    scale: 0.98 0.92;
+  }
+}
+
+@keyframes goo-life {
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes badge-squash {
+  55% {
+    scale: 1;
+  }
+  68% {
+    scale: 1.1 0.86;
+  }
+  84% {
+    scale: 0.96 1.05;
+  }
+}
+
+::view-transition-group(*) {
+  animation-duration: 360ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-header) {
+  display: none;
+}
+::view-transition-new(site-header) {
+  animation: none;
+}
+
+::view-transition-group(addr-card),
+::view-transition-group(addr-text) {
+  animation-duration: 560ms;
+  z-index: 50;
+}
+
+::view-transition-image-pair(addr-card),
+::view-transition-image-pair(letter-stamp),
+::view-transition-image-pair(letter-subject) {
+  animation: via-blur 360ms ease both;
+}
+
+@keyframes via-blur {
+  40% {
+    filter: blur(2px);
+  }
+}
+
+::view-transition-old(root) {
+  animation: vt-fade 160ms ease-in both;
+}
+::view-transition-new(root) {
+  animation: vt-fade 240ms 120ms ease-out both reverse;
+}
+
+@media (min-width: 768px) {
+  html[data-morph]::view-transition-old(root) {
+    display: none;
+  }
+  html[data-morph]::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+@keyframes vt-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-morph="forward"]::view-transition-old(root) {
+    --vt-x: -24%;
+    animation: vt-out 240ms cubic-bezier(0.4, 0, 1, 1) both;
+  }
+  html[data-morph="forward"]::view-transition-new(root) {
+    --vt-x: 24%;
+    animation: vt-in 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  html[data-morph="back"]::view-transition-old(root) {
+    --vt-x: 24%;
+    animation: vt-out 240ms cubic-bezier(0.4, 0, 1, 1) both;
+  }
+  html[data-morph="back"]::view-transition-new(root) {
+    --vt-x: -24%;
+    animation: vt-in 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}
+
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    translate: var(--vt-x) 0;
+  }
+}
+
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    translate: var(--vt-x) 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -173,5 +314,12 @@
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-image-pair(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }

@@ -12,7 +12,7 @@ function inkFor(address: string): string {
 
 export function SenderStamp({ sender, className }: { sender: Sender; className?: string }) {
   return (
-    <span aria-hidden className={cn("perforated inline-block shrink-0 bg-paper", className)}>
+    <span aria-hidden data-morph="stamp" className={cn("perforated inline-block shrink-0 bg-paper", className)}>
       <span
         className="grid size-full place-items-center font-display text-[1.15em] leading-none text-white italic"
         style={{ backgroundColor: inkFor(sender.address) }}

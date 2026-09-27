@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { ArrowRight, DiceFive, SpinnerGap } from "@phosphor-icons/react";
 import { Envelope } from "@/components/envelope";
 import { createEmailAddress } from "@/lib/api";
+import { addressPairs, morph } from "@/lib/morph";
 import { sessionStore } from "@/lib/stores";
 import { DOMAIN, randomUsername, usernameProblem } from "@/lib/username";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,8 @@ async function create(_: Failure, form: FormData): Promise<Failure> {
   const problem = username ? usernameProblem(username) : "Pick a username first";
   if (problem) return { username, message: problem };
   try {
-    sessionStore.set(await createEmailAddress(username));
+    const session = await createEmailAddress(username);
+    morph(() => sessionStore.set(session), { from: addressPairs("landing"), to: () => addressPairs("mailbox") });
     return null;
   } catch (error) {
     return { username, message: error instanceof Error ? error.message : "Could not create that address" };
@@ -55,6 +57,7 @@ export function Landing() {
         <form action={submit} noValidate className="animate-rise mt-8 [animation-delay:180ms] tiny:mt-5" aria-label="Create an address">
           <div className="flex flex-col gap-2.5 sm:flex-row">
             <div
+              data-morph-fallback="addr-card"
               className={cn(
                 "flex h-13 min-w-0 flex-1 items-center rounded-xl border bg-raised pr-1.5 pl-4 transition-[border-color,box-shadow] focus-within:border-ink-2 focus-within:shadow-[0_0_0_4px_var(--glow)]",
                 message ? "border-stamp" : "border-line",
@@ -65,6 +68,7 @@ export function Landing() {
               </label>
               <input
                 ref={input}
+                data-morph-fallback="addr-text"
                 id="username"
                 name="username"
                 value={username}

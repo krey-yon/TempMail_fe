@@ -30,7 +30,7 @@ export function AddressCard({ address, poll, online, onCopy, onRefresh, onDelete
   };
 
   return (
-    <section aria-label="Your address" className="relative shrink-0 overflow-hidden rounded-2xl border border-line bg-raised">
+    <section aria-label="Your address" data-morph-dst="addr-card" className="relative shrink-0 overflow-hidden rounded-2xl border border-line bg-raised">
       <div className="airmail h-1.5" />
       <div className="px-4 pt-3.5 pb-3">
         <div className="flex items-center justify-between">
@@ -43,7 +43,7 @@ export function AddressCard({ address, poll, online, onCopy, onRefresh, onDelete
           title="Copy address"
           className="group mt-2 flex w-full items-baseline gap-2 text-left"
         >
-          <span className="min-w-0 truncate font-mono text-[clamp(17px,2.2vw,21px)] tracking-tight">
+          <span data-morph-dst="addr-text" className="min-w-0 truncate font-mono text-[clamp(17px,2.2vw,21px)] tracking-tight">
             {local}
             <span className="text-ink-3">@{domain}</span>
           </span>

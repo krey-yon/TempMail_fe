@@ -9,17 +9,27 @@ import { useMailbox } from "@/hooks/use-mailbox";
 import { deleteEmailAddress, type Session } from "@/lib/api";
 import { playChime } from "@/lib/chime";
 import { senderLabel, type Mail } from "@/lib/mail";
+import { addressPairs, letterPairs, morph } from "@/lib/morph";
 import { readStore, sessionStore, useReadIds } from "@/lib/stores";
 
 function signOut(address: string) {
-  readStore(address).set(null);
-  sessionStore.set(null);
+  morph(
+    () => {
+      readStore(address).set(null);
+      sessionStore.set(null);
+    },
+    { from: addressPairs("mailbox"), to: () => addressPairs("landing") },
+  );
 }
+
+const row = (id: string | null) => (id ? document.getElementById(mailDomId(id)) : null);
+const readerHeader = () => document.querySelector("[data-reader-header]");
 
 export function Mailbox({ session }: { session: Session }) {
   const { address, token } = session;
   const notify = useToast();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [arrivals, setArrivals] = useState(0);
   const readIds = useReadIds(address);
 
   const { mails, poll, online, refresh, remove } = useMailbox(session, {
@@ -29,6 +39,7 @@ export function Mailbox({ session }: { session: Session }) {
     },
     onArrived: (arrived: Mail[]) => {
       playChime();
+      setArrivals((n) => n + 1);
       notify(arrived.length === 1 ? `New mail from ${senderLabel(arrived[0].from)}` : `${arrived.length} new messages`);
     },
   });
@@ -45,6 +56,16 @@ export function Mailbox({ session }: { session: Session }) {
     if (!unread.has(id)) return;
     const present = new Set(mails?.map((m) => m.id));
     readStore(address).set([...readIds.filter((r) => present.has(r)), id]);
+  };
+
+  const open = (id: string) => {
+    if (id === selectedId) return;
+    morph(() => select(id), { from: letterPairs(row(id)), to: () => letterPairs(readerHeader()), direction: "forward" });
+  };
+
+  const close = () => {
+    const id = selectedId;
+    morph(() => setSelectedId(null), { from: letterPairs(readerHeader()), to: () => letterPairs(row(id)), direction: "back" });
   };
 
   const copy = (announce = true) => {
@@ -128,14 +149,14 @@ export function Mailbox({ session }: { session: Session }) {
     >
       <div className="flex min-h-0 flex-col gap-3 max-md:group-data-[view=reader]/mailbox:hidden lg:gap-4">
         <AddressCard address={address} poll={poll} online={online} onCopy={() => copy(false)} onRefresh={refresh} onDelete={deleteAddress} />
-        <InboxList mails={mails} unread={unread} selectedId={selectedId} onSelect={select} onDelete={deleteMail} />
+        <InboxList mails={mails} unread={unread} arrivals={arrivals} selectedId={selectedId} onSelect={open} onDelete={deleteMail} />
       </div>
       <div className="min-h-0 max-md:group-data-[view=list]/mailbox:hidden">
         <Reader
           mail={selected}
           address={address}
           hasMail={(mails?.length ?? 0) > 0}
-          onBack={() => setSelectedId(null)}
+          onBack={close}
           onDelete={deleteMail}
           onCopy={() => copy()}
         />

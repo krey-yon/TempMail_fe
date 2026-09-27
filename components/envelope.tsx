@@ -6,7 +6,7 @@ export function Envelope({ username, className }: { username: string; className?
   return (
     <div className={cn("relative mx-auto aspect-[1.6] w-full @container", className)}>
       <div className="absolute inset-0 translate-x-[3%] translate-y-[-5%] rotate-[4deg] rounded-md border border-line bg-raised" />
-      <div className="absolute inset-0 -rotate-2 overflow-hidden rounded-md bg-paper text-paper-ink shadow-[0_30px_60px_-20px_rgb(0_0_0/0.45),0_2px_0_rgb(0_0_0/0.04)]">
+      <div data-morph-src="addr-card" className="absolute inset-0 -rotate-2 overflow-hidden rounded-md bg-paper text-paper-ink shadow-[0_30px_60px_-20px_rgb(0_0_0/0.45),0_2px_0_rgb(0_0_0/0.04)]">
         <div className="airmail absolute inset-x-0 top-0 h-[2.2cqw]" />
         <div className="airmail absolute inset-x-0 bottom-0 h-[2.2cqw]" />
 
@@ -27,7 +27,7 @@ export function Envelope({ username, className }: { username: string; className?
 
         <div className="absolute right-[8%] bottom-[15%] left-[10%]">
           <p className="mb-[1.2cqw] font-mono text-[1.7cqw] tracking-[0.2em] text-paper-ink/50 uppercase">Deliver to</p>
-          <p className="truncate border-b border-paper-ink/15 pb-[1.2cqw] font-mono text-[4.6cqw] leading-tight tracking-tight">
+          <p data-morph-src="addr-text" className="truncate border-b border-paper-ink/15 pb-[1.2cqw] font-mono text-[4.6cqw] leading-tight tracking-tight">
             <span>{username || "you"}</span>
             <span aria-hidden className="animate-caret mx-[0.2cqw] inline-block h-[0.95em] w-[0.5cqw] translate-y-[0.12em] bg-stamp" />
             <span className="text-paper-ink/45">@{DOMAIN}</span>
