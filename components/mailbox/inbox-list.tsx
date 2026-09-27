@@ -75,7 +75,9 @@ export function InboxList({ mails, unread, selectedId, onSelect, onDelete }: Pro
                     </span>
                     <span className={cn("mt-0.5 flex items-center gap-1.5 text-[13.5px]", isUnread ? "text-ink" : "text-ink-2")}>
                       {isUnread && <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-stamp" />}
-                      <span className="truncate">{mail.subject ?? <em className="text-ink-3">No subject</em>}</span>
+                      <span data-morph="subject" className="truncate">
+                        {mail.subject ?? <em className="text-ink-3">No subject</em>}
+                      </span>
                     </span>
                     <span className="mt-0.5 block truncate text-[12.5px] text-ink-3">{mail.preview || "\u00a0"}</span>
                   </span>

@@ -23,7 +23,7 @@ export function Reader({ mail, address, hasMail, onBack, onDelete, onCopy }: Pro
 
   return (
     <article aria-label="Message" className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-raised">
-      <header className="shrink-0 border-b border-line px-4 pt-3 pb-4 sm:px-6 sm:pt-4">
+      <header data-reader-header className="shrink-0 border-b border-line px-4 pt-3 pb-4 sm:px-6 sm:pt-4">
         <div className="flex items-center gap-3">
           <button type="button" onClick={onBack} aria-label="Back to inbox" className="-ml-1.5 grid size-9 place-items-center rounded-lg text-ink-2 hover:bg-desk hover:text-ink md:hidden">
             <ArrowLeft size={18} />
@@ -49,7 +49,7 @@ export function Reader({ mail, address, hasMail, onBack, onDelete, onCopy }: Pro
             <Trash size={17} />
           </button>
         </div>
-        <h2 className="mt-3 line-clamp-2 font-display text-[clamp(1.35rem,2.4vw,1.9rem)] leading-[1.15] tracking-[-0.01em]">
+        <h2 data-morph="subject" className="mt-3 line-clamp-2 font-display text-[clamp(1.35rem,2.4vw,1.9rem)] leading-[1.15] tracking-[-0.01em]">
           {mail.subject ?? <em className="text-ink-3">No subject</em>}
         </h2>
       </header>
