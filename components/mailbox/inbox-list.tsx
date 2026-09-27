@@ -1,6 +1,7 @@
 "use client";
 
 import { Trash } from "@phosphor-icons/react";
+import { useState } from "react";
 import { SenderStamp } from "@/components/mailbox/sender-stamp";
 import { relativeTime } from "@/lib/format";
 import { senderLabel, type Mail } from "@/lib/mail";
@@ -10,6 +11,7 @@ import { cn } from "@/lib/utils";
 type Props = {
   mails: Mail[] | null;
   unread: ReadonlySet<string>;
+  arrivals: number;
   selectedId: string | null;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
@@ -17,14 +19,27 @@ type Props = {
 
 export const mailDomId = (id: string) => `mail-${id}`;
 
-export function InboxList({ mails, unread, selectedId, onSelect, onDelete }: Props) {
+export function InboxList({ mails, unread, arrivals, selectedId, onSelect, onDelete }: Props) {
   return (
     <section aria-label="Inbox" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-raised">
       <header className="flex h-11 shrink-0 items-center justify-between border-b border-line px-4 font-mono text-[10.5px] tracking-[0.2em] uppercase">
         <h2 className="text-ink-2">
           Inbox <span className="text-ink-3">· {mails?.length ?? 0}</span>
         </h2>
-        {unread.size > 0 && <span className="rounded-full bg-stamp px-2 py-0.5 text-stamp-ink">{unread.size} new</span>}
+        {unread.size > 0 && (
+          <span className="relative">
+            {arrivals > 0 && <ArrivalDrip key={arrivals} />}
+            <span
+              key={arrivals}
+              className={cn(
+                "relative block rounded-full bg-stamp px-2 py-0.5 text-stamp-ink",
+                arrivals > 0 && "animate-[badge-squash_720ms_ease-out] motion-reduce:animate-none",
+              )}
+            >
+              {unread.size} new
+            </span>
+          </span>
+        )}
       </header>
 
       {mails === null ? (
@@ -97,6 +112,30 @@ export function InboxList({ mails, unread, selectedId, onSelect, onDelete }: Pro
         </ul>
       )}
     </section>
+  );
+}
+
+function ArrivalDrip() {
+  const [done, setDone] = useState(false);
+  if (done) return null;
+  return (
+    <>
+      <svg aria-hidden className="absolute size-0">
+        <filter id="goo" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" />
+          <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -8" />
+        </filter>
+      </svg>
+      <span
+        aria-hidden
+        data-goo
+        onAnimationEnd={(e) => e.target === e.currentTarget && setDone(true)}
+        className="pointer-events-none absolute -inset-x-2 -top-3 -bottom-2 animate-[goo-life_720ms_linear] [filter:url(#goo)] motion-reduce:hidden"
+      >
+        <span className="absolute inset-x-2 top-3 bottom-2 animate-[goo-swell_720ms_ease-out] rounded-full bg-stamp" />
+        <span className="absolute top-0 left-1/2 -ml-1 size-2 animate-[goo-drop_720ms_cubic-bezier(0.5,0,0.8,0.6)_both] rounded-full bg-stamp" />
+      </span>
+    </>
   );
 }
 

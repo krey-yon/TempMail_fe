@@ -29,6 +29,7 @@ export function Mailbox({ session }: { session: Session }) {
   const { address, token } = session;
   const notify = useToast();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [arrivals, setArrivals] = useState(0);
   const readIds = useReadIds(address);
 
   const { mails, poll, online, refresh, remove } = useMailbox(session, {
@@ -38,6 +39,7 @@ export function Mailbox({ session }: { session: Session }) {
     },
     onArrived: (arrived: Mail[]) => {
       playChime();
+      setArrivals((n) => n + 1);
       notify(arrived.length === 1 ? `New mail from ${senderLabel(arrived[0].from)}` : `${arrived.length} new messages`);
     },
   });
@@ -147,7 +149,7 @@ export function Mailbox({ session }: { session: Session }) {
     >
       <div className="flex min-h-0 flex-col gap-3 max-md:group-data-[view=reader]/mailbox:hidden lg:gap-4">
         <AddressCard address={address} poll={poll} online={online} onCopy={() => copy(false)} onRefresh={refresh} onDelete={deleteAddress} />
-        <InboxList mails={mails} unread={unread} selectedId={selectedId} onSelect={open} onDelete={deleteMail} />
+        <InboxList mails={mails} unread={unread} arrivals={arrivals} selectedId={selectedId} onSelect={open} onDelete={deleteMail} />
       </div>
       <div className="min-h-0 max-md:group-data-[view=list]/mailbox:hidden">
         <Reader
