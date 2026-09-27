@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   experimental: {
     optimizeCss: true,
+    optimizePackageImports: ["@phosphor-icons/react"],
   },
   headers: async () => [
     {
