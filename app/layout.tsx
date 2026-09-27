@@ -1,7 +1,19 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { Fragment_Mono, Newsreader, Schibsted_Grotesk } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
 import "./globals.css";
+
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  axes: ["opsz"],
+  variable: "--font-newsreader",
+});
+
+const schibsted = Schibsted_Grotesk({ subsets: ["latin"], variable: "--font-schibsted" });
+
+const fragment = Fragment_Mono({ subsets: ["latin"], weight: "400", variable: "--font-fragment" });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://xelio.me"),
@@ -50,12 +62,6 @@ export const metadata: Metadata = {
         alt: "Xelio - Temporary Email Service",
         type: "image/svg+xml",
       },
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Xelio - Temporary Email Service",
-      },
     ],
     locale: "en_US",
     type: "website",
@@ -98,14 +104,17 @@ export const metadata: Metadata = {
   classification: "Email Service",
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: light)", color: "#ebe5d8" },
+    { media: "(prefers-color-scheme: dark)", color: "#141311" },
   ],
 };
+
+const themeBoot = `try{var t=localStorage.getItem("xelio_theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=t;if(localStorage.getItem("xelio_session"))document.documentElement.setAttribute("data-session","")}catch(e){}`;
 
 export default function RootLayout({
   children,
@@ -113,30 +122,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${newsreader.variable} ${schibsted.variable} ${fragment.variable}`}
+    >
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="preload"
-          href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=IM+Fell+English+SC&display=swap"
-          as="style"
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=IM+Fell+English+SC&display=swap"
-          media="print"
-          onLoad={undefined}
-          onLoadCapture={undefined}
-        />
-        <noscript>
-          <link
-            rel="stylesheet"
-            href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=IM+Fell+English+SC&display=swap"
-          />
-        </noscript>
+        <script dangerouslySetInnerHTML={{ __html: themeBoot }} />
       </head>
-      <body className="h-full">
+      <body>
         {children}
         <Analytics />
         <Script
