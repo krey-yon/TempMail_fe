@@ -80,7 +80,7 @@ export default function AboutPage() {
           <strong>Instant addresses.</strong> Generate a working email in seconds. No registration or personal information required.
         </p>
         <p>
-          <strong>Automatic deletion.</strong> All emails and addresses are automatically purged after your session ends.
+          <strong>Automatic deletion.</strong> Inboxes expire 24 hours after creation, and their stored messages are deleted. You can also delete an inbox at any time.
         </p>
         <p>
           <strong>Real-time inbox.</strong> Messages appear on their own with live polling. No manual refresh needed.
@@ -91,7 +91,7 @@ export default function AboutPage() {
       </Section>
       <Section title="How it works">
         <p>
-          Choose any username you like, and Xelio creates a unique email address at xelio.me. Any emails sent to that address appear in your inbox. When you are done, delete the address and all its messages are permanently removed.
+          Choose an available username, and Xelio creates a temporary email address at xelio.me. Mail sent to it appears in your inbox until it expires after 24 hours or you delete it. Stored messages are removed, and the username becomes available again. If someone reuses that address, future mail sent to it can reach their new inbox.
         </p>
       </Section>
       <Section title="Use cases">

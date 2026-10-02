@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { ArrowRight, DiceFive, SpinnerGap } from "@phosphor-icons/react";
 import { Envelope } from "@/components/envelope";
+import { UsageBadge } from "@/components/usage-badge";
 import { createEmailAddress } from "@/lib/api";
 import { addressPairs, morph } from "@/lib/morph";
 import { sessionStore } from "@/lib/stores";
@@ -24,7 +25,7 @@ async function create(_: Failure, form: FormData): Promise<Failure> {
   }
 }
 
-const FEATURES = ["No sign-up", "Checks every 10 seconds", "Delete it any time"];
+const FEATURES = ["No sign-up", "24-hour inbox", "Delete any time"];
 
 export function Landing() {
   const [username, setUsername] = useState("");
@@ -42,19 +43,19 @@ export function Landing() {
       <section className="mx-auto w-full max-w-xl lg:mx-0">
         <Envelope
           username={username}
-          className="animate-rise mb-7 max-w-[300px] rotate-1 short:hidden lg:hidden"
+          className="mb-7 max-w-[300px] rotate-1 short:hidden lg:hidden"
         />
-        <p className="animate-rise mb-4 font-mono text-[11px] tracking-[0.2em] text-ink-3 uppercase tiny:mb-2">
-          <span className="text-stamp">No. 01</span> · Disposable inbox
+        <p className="mb-4 font-mono text-[11px] tracking-[0.2em] text-ink-2 uppercase tiny:mb-2">
+          <span className="text-stamp">Xelio</span> · Temporary email
         </p>
-        <h1 className="animate-rise font-display text-[clamp(2.5rem,6.4vw,5.75rem)] leading-[0.92] font-normal tracking-[-0.025em] [animation-delay:60ms] tiny:text-[2.35rem]">
+        <h1 className="font-display text-[clamp(2.5rem,6.4vw,5.75rem)] leading-[0.92] font-normal tracking-[-0.025em] tiny:text-[2.35rem]">
           Mail that <em className="text-stamp">forgets</em> you were here.
         </h1>
-        <p className="animate-rise mt-5 max-w-md text-[15px] leading-relaxed text-ink-2 [animation-delay:120ms] sm:text-base tiny:mt-3 tiny:text-sm">
-          A real address at {DOMAIN}, ready in one click. Catch the sign-up codes and receipts, then throw the whole thing away.
+        <p className="mt-5 max-w-md text-[15px] leading-relaxed text-ink-2 sm:text-base tiny:mt-3 tiny:text-sm">
+          Catch the code. Skip the spam. Gone in 24 hours.
         </p>
 
-        <form action={submit} noValidate className="animate-rise mt-8 [animation-delay:180ms] tiny:mt-5" aria-label="Create an address">
+        <form action={submit} noValidate className="mt-8 tiny:mt-5" aria-label="Create an address">
           <div className="flex flex-col gap-2.5 sm:flex-row">
             <div
               data-morph-fallback="addr-card"
@@ -110,7 +111,7 @@ export function Landing() {
           </p>
         </form>
 
-        <ul className="animate-rise mt-6 flex flex-wrap gap-x-5 gap-y-2 font-mono text-[11px] tracking-[0.12em] text-ink-3 uppercase [animation-delay:240ms] tiny:hidden">
+        <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 font-mono text-[11px] tracking-[0.12em] text-ink-2 uppercase tiny:hidden">
           {FEATURES.map((f) => (
             <li key={f} className="flex items-center gap-2">
               <span aria-hidden className="size-1 rotate-45 bg-stamp" />
@@ -118,9 +119,10 @@ export function Landing() {
             </li>
           ))}
         </ul>
+        <UsageBadge />
       </section>
 
-      <aside aria-hidden className="animate-rise hidden [animation-delay:200ms] lg:block">
+      <aside aria-hidden className="hidden lg:block">
         <Envelope username={username} className="max-w-[620px]" />
       </aside>
     </main>
