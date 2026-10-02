@@ -90,7 +90,7 @@ export default function PrivacyPage() {
       </Section>
       <Section title="Data retention">
         <p>
-          All temporary email data, including messages and addresses, is automatically purged after your session expires. We do not retain, sell, or share any personal information.
+          Inboxes expire 24 hours after creation. Their stored messages are purged after expiry or manual deletion, and their usernames become available for reuse. Future mail to a reused address can reach its new owner. We retain an aggregate count of successfully created inboxes, including reused addresses; this does not count unique people.
         </p>
       </Section>
       <Section title="Third-party services">

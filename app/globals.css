@@ -122,6 +122,62 @@
   }
 }
 
+/* Only SVG geometry moves in the landing artwork. */
+.envelope-flap {
+  d: path("M24 100 Q24 92 32 92 L600 92 Q608 92 608 100 L316 245 Z");
+}
+
+.envelope-art[data-addressed="true"] .envelope-flap {
+  d: path("M24 100 Q24 92 32 92 L600 92 Q608 92 608 100 L316 -55 Z");
+}
+
+.envelope-art[data-addressed="true"] .envelope-letter {
+  transform: translateY(-65px);
+}
+
+@media (hover: hover) {
+  .envelope-art:hover .envelope-flap {
+    d: path("M24 100 Q24 92 32 92 L600 92 Q608 92 608 100 L316 -55 Z");
+  }
+  .envelope-art:hover .envelope-letter {
+    transform: translateY(-65px);
+  }
+}
+
+@keyframes ink-morph {
+  0%, 100% {
+    d: path("M0 -40 C22 -40 40 -22 40 0 C40 22 22 40 0 40 C-22 40 -40 22 -40 0 C-40 -22 -22 -40 0 -40 Z");
+  }
+  50% {
+    d: path("M0 -38 C27 -44 38 -18 41 0 C44 25 18 36 0 41 C-26 44 -36 20 -41 0 C-44 -24 -19 -35 0 -38 Z");
+  }
+}
+
+@keyframes ink-drift {
+  50% { transform: translate(7px, -6px); }
+}
+
+@keyframes ink-return {
+  50% { transform: translate(-6px, 5px); }
+}
+
+@keyframes postmark-draw {
+  from { stroke-dashoffset: 180; opacity: 0; }
+  to { stroke-dashoffset: 0; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .envelope-flap { transition: d 400ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .envelope-letter { transition: transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .ink-seal { animation: ink-morph 6s ease-in-out infinite; }
+  .ink-drop-one { animation: ink-drift 6s ease-in-out infinite; }
+  .ink-drop-two { animation: ink-return 6s ease-in-out infinite; }
+  .envelope-postmark path:not([id]) {
+    stroke-dasharray: 180;
+    animation: postmark-draw 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}
+
 @keyframes stamp-in {
   0% {
     opacity: 0;

@@ -1,42 +1,58 @@
+import { useId } from "react";
 import { Postmark } from "@/components/postmark";
 import { DOMAIN } from "@/lib/username";
 import { cn } from "@/lib/utils";
 
 export function Envelope({ username, className }: { username: string; className?: string }) {
+  const id = useId();
   return (
-    <div className={cn("relative mx-auto aspect-[1.6] w-full @container", className)}>
-      <div className="absolute inset-0 translate-x-[3%] translate-y-[-5%] rotate-[4deg] rounded-md border border-line bg-raised" />
-      <div data-morph-src="addr-card" className="absolute inset-0 -rotate-2 overflow-hidden rounded-md bg-paper text-paper-ink shadow-[0_30px_60px_-20px_rgb(0_0_0/0.45),0_2px_0_rgb(0_0_0/0.04)]">
-        <div className="airmail absolute inset-x-0 top-0 h-[2.2cqw]" />
-        <div className="airmail absolute inset-x-0 bottom-0 h-[2.2cqw]" />
-
-        <div className="absolute top-[11%] left-[6%] rounded-[0.5cqw] border-[0.3cqw] border-air px-[1.4cqw] py-[0.8cqw] font-mono text-[1.75cqw] leading-tight tracking-[0.14em] text-air uppercase">
-          Par avion
-          <br />
-          By air mail
-        </div>
-
-        <div className="perforated absolute top-[10%] right-[6%] w-[17%] bg-paper">
-          <div className="flex aspect-[0.82] flex-col justify-between bg-stamp p-[9%] text-stamp-ink">
-            <span className="font-mono text-[1.5cqw] tracking-widest">XELIO</span>
-            <span className="text-center font-display text-[8.5cqw] leading-none italic">X</span>
-            <span className="text-right font-mono text-[1.5cqw]">0¢</span>
-          </div>
-        </div>
-        <Postmark className="animate-stamp absolute top-[6%] right-[14%] w-[44%] text-stamp opacity-80 mix-blend-multiply [--tilt:-12deg] [animation-delay:450ms]" />
-
-        <div className="absolute right-[8%] bottom-[15%] left-[10%]">
-          <p className="mb-[1.2cqw] font-mono text-[1.7cqw] tracking-[0.2em] text-paper-ink/50 uppercase">Deliver to</p>
-          <p data-morph-src="addr-text" className="truncate border-b border-paper-ink/15 pb-[1.2cqw] font-mono text-[4.6cqw] leading-tight tracking-tight">
-            <span>{username || "you"}</span>
-            <span aria-hidden className="animate-caret mx-[0.2cqw] inline-block h-[0.95em] w-[0.5cqw] translate-y-[0.12em] bg-stamp" />
-            <span className="text-paper-ink/45">@{DOMAIN}</span>
-          </p>
-          <p className="mt-[1.8cqw] border-b border-paper-ink/15 pb-[1.2cqw] font-display text-[2.9cqw] text-paper-ink/70 italic">
-            Poste restante, held for collection
-          </p>
-        </div>
-      </div>
-    </div>
+    <svg viewBox="0 0 640 420" data-addressed={username ? "true" : undefined} className={cn("envelope-art mx-auto w-full overflow-visible", className)} aria-hidden="true">
+      <defs>
+        <pattern id={`${id}-airmail`} width="48" height="48" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+          <rect width="12" height="48" fill="var(--stamp)" />
+          <rect x="24" width="12" height="48" fill="var(--air)" />
+        </pattern>
+        <clipPath id={`${id}-body`}><rect x="24" y="92" width="584" height="300" rx="8" /></clipPath>
+        <filter id={`${id}-ink`} x="-50%" y="-50%" width="200%" height="200%" colorInterpolationFilters="sRGB">
+          <feGaussianBlur stdDeviation="3" />
+          <feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 20 -9" />
+        </filter>
+      </defs>
+      <rect x="38" y="85" width="580" height="300" rx="8" fill="var(--raised)" stroke="var(--line)" transform="rotate(4 328 235)" />
+      <g transform="rotate(-2 320 240)">
+        <path className="envelope-flap" d="M24 100 Q24 92 32 92 L600 92 Q608 92 608 100 L316 245 Z" fill="var(--paper)" stroke="var(--line)" />
+        <g className="envelope-letter">
+          <rect x="65" y="104" width="500" height="240" rx="6" fill="var(--sheet)" stroke="var(--line)" />
+          <path d="M100 132 H320 M100 150 H455 M100 168 H400" fill="none" stroke="var(--ink-3)" strokeWidth="2" strokeLinecap="round" />
+          <text x="485" y="162" fill="var(--stamp)" fontSize="36" fontFamily="var(--font-display)" fontStyle="italic">X</text>
+        </g>
+        <g data-morph-src="addr-card">
+          <rect x="24" y="92" width="584" height="300" rx="8" fill="var(--paper)" />
+          <g clipPath={`url(#${id}-body)`}>
+            <rect x="24" y="92" width="584" height="12" fill={`url(#${id}-airmail)`} />
+            <rect x="24" y="380" width="584" height="12" fill={`url(#${id}-airmail)`} />
+            <path d="M24 108 L316 240 L608 108 M24 380 L235 260 M608 380 L395 260" fill="none" stroke="var(--paper-ink)" strokeOpacity="0.09" strokeWidth="1.5" />
+          </g>
+          <rect x="55" y="127" width="100" height="34" rx="3" fill="none" stroke="var(--air)" strokeWidth="1.5" />
+          <text x="105" y="149" textAnchor="middle" fill="var(--air)" fontFamily="var(--font-mono)" fontSize="12" letterSpacing="2">PAR AVION</text>
+          <g transform="translate(510 170)">
+            <g filter={`url(#${id}-ink)`} fill="var(--stamp)">
+              <path className="ink-seal" d="M0 -40 C22 -40 40 -22 40 0 C40 22 22 40 0 40 C-22 40 -40 22 -40 0 C-40 -22 -22 -40 0 -40 Z" />
+              <circle className="ink-drop ink-drop-one" cx="30" cy="-27" r="7" />
+              <circle className="ink-drop ink-drop-two" cx="-29" cy="26" r="5" />
+            </g>
+            <circle r="29" fill="none" stroke="var(--stamp-ink)" strokeOpacity="0.25" />
+            <text y="12" textAnchor="middle" fill="var(--stamp-ink)" fontFamily="var(--font-display)" fontSize="42" fontStyle="italic">X</text>
+          </g>
+          <Postmark x={283} y={119} width={235} height={128} className="envelope-postmark text-stamp opacity-70 mix-blend-multiply" />
+          <text x="82" y="292" fill="var(--paper-ink)" fillOpacity="0.5" fontFamily="var(--font-mono)" fontSize="11" letterSpacing="2.5">DELIVER TO</text>
+          <text data-morph-src="addr-text" x="82" y="330" fill="var(--paper-ink)" fontFamily="var(--font-mono)" fontSize={username.length > 16 ? 17 : 25}>
+            {username || "you"}<tspan fillOpacity="0.45">@{DOMAIN}</tspan>
+          </text>
+          <path d="M82 344 H550" stroke="var(--paper-ink)" strokeOpacity="0.15" />
+          <text x="82" y="365" fill="var(--paper-ink)" fillOpacity="0.55" fontFamily="var(--font-mono)" fontSize="10" letterSpacing="1.5">24 HOURS. THEN A CLEAN SLATE.</text>
+        </g>
+      </g>
+    </svg>
   );
 }

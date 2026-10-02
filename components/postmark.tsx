@@ -1,10 +1,10 @@
-import { useId } from "react";
+import { useId, type SVGProps } from "react";
 import { cn } from "@/lib/utils";
 
-export function Postmark({ className }: { className?: string }) {
+export function Postmark({ className, ...props }: SVGProps<SVGSVGElement>) {
   const ring = useId();
   return (
-    <svg viewBox="0 0 220 120" className={cn("font-mono", className)} aria-hidden>
+    <svg {...props} viewBox="0 0 220 120" className={cn("font-mono", className)} aria-hidden>
       <defs>
         <path id={ring} d="M60 60 m-43 0 a43 43 0 1 1 86 0 a43 43 0 1 1 -86 0" />
       </defs>

@@ -77,7 +77,7 @@ export function AddressCard({ address, poll, online, onCopy, onRefresh, onDelete
                 <div className="p-6">
                   <AlertDialog.Title className="font-display text-2xl">Delete this address?</AlertDialog.Title>
                   <AlertDialog.Description className="mt-2 text-sm leading-relaxed text-ink-2">
-                    <span className="font-mono text-ink">{address}</span> and every message in it will be gone for good.
+                    Every stored message in <span className="font-mono text-ink">{address}</span> will be gone for good. The username becomes available again, so future mail to this address can reach a new owner.
                   </AlertDialog.Description>
                   <div className="mt-6 flex justify-end gap-2">
                     <AlertDialog.Cancel className="h-10 rounded-lg px-4 text-sm text-ink-2 hover:bg-desk hover:text-ink">Keep it</AlertDialog.Cancel>

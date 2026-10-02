@@ -22,6 +22,10 @@ export interface Session {
   created_at: string;
 }
 
+export interface PublicStats {
+  total_addresses_created: number;
+}
+
 interface CreateEmailApiResponse {
   address: string;
   created_at: string;
@@ -49,6 +53,15 @@ async function parseResponse<T>(res: Response): Promise<T> {
     throw new ApiError(res.status, json.error || "Request failed");
   }
   return json.data;
+}
+
+export async function fetchStats(signal?: AbortSignal): Promise<PublicStats> {
+  const res = await fetch(`${API_BASE}/api/stats`, { cache: "no-store", signal });
+  const stats = await parseResponse<PublicStats>(res);
+  if (!Number.isSafeInteger(stats.total_addresses_created) || stats.total_addresses_created < 0) {
+    throw new ApiError(res.status, "Usage statistics unavailable");
+  }
+  return stats;
 }
 
 export async function fetchEmails(address: string, token: string): Promise<Mail[]> {

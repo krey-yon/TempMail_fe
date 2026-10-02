@@ -16,6 +16,22 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+### API configuration
+
+The public app is `https://xelio.me`. API requests default to `https://api.xelio.me`; no environment override is needed for hosted use. The API must allow the app origin through CORS and expose `data.total_addresses_created` on `/api/stats` for the usage badge to display a count.
+
+### Connect to the local TempMail backend
+
+Start the backend with the local Docker PostgreSQL settings documented in its README. The HTTP server listens on port 3000. Run this frontend on a different port:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:3000 pnpm dev --port 3001
+```
+
+The public usage badge requests `/api/stats` and displays `data.total_addresses_created`: the lifetime number of successfully created inboxes, including repeat creations of reused usernames. It refreshes when the landing page mounts (including after deletion or expiry), every minute while visible, and when the tab becomes visible. Loading, failed requests, and missing or invalid counts never display a fabricated number. Stats requests do not send mailbox tokens or create a visitor identifier.
+
+`NEXT_PUBLIC_API_URL` is included in the browser bundle; set it before starting the development server or building for deployment. Neither repository's existing `.env` needs to be changed for the command above.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
