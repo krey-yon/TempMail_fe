@@ -6,13 +6,16 @@ export interface ApiResponse<T> {
   success: boolean;
   data: T | null;
   error: string | null;
+  code?: string | null;
 }
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  code: string | null;
+  constructor(status: number, message: string, code: string | null = null) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -40,17 +43,17 @@ function authHeaders(token: string): Record<string, string> {
 }
 
 async function parseResponse<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    let message = `Request failed (${res.status})`;
-    try {
-      const json: ApiResponse<unknown> = await res.json();
-      if (json.error) message = json.error;
-    } catch {}
-    throw new ApiError(res.status, message);
+  let json: ApiResponse<T> | null = null;
+  try {
+    json = await res.json();
+  } catch {
+    json = null;
   }
-  const json: ApiResponse<T> = await res.json();
-  if (!json.success || json.data === null || json.data === undefined) {
-    throw new ApiError(res.status, json.error || "Request failed");
+  if (!res.ok) {
+    throw new ApiError(res.status, json?.error || `Request failed (${res.status})`, json?.code ?? null);
+  }
+  if (!json?.success || json.data === null || json.data === undefined) {
+    throw new ApiError(res.status, json?.error || "Request failed", json?.code ?? null);
   }
   return json.data;
 }
@@ -82,11 +85,11 @@ export async function deleteEmail(address: string, token: string, id: string): P
   await parseResponse<unknown>(res);
 }
 
-export async function createEmailAddress(username: string): Promise<Session> {
+export async function createEmailAddress(username: string, turnstileToken: string): Promise<Session> {
   const res = await fetch(`${API_BASE}/api/emails`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username }),
+    body: JSON.stringify({ username, turnstile_token: turnstileToken }),
   });
   const data = await parseResponse<CreateEmailApiResponse>(res);
   return {
